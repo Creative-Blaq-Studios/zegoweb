@@ -1,0 +1,10 @@
+# packages/zegoweb/example/supabase/config.toml
+#
+# Minimal placeholder. Real projects should use `supabase init` to generate
+# a full config.toml with project id, ports, and seeded services. This file
+# only exists so that the functions/ directory has a sibling config reference.
+
+project_id = "zegoweb-example"
+
+[functions.zego-token]
+verify_jwt = false
