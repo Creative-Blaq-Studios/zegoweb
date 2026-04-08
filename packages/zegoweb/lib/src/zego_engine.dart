@@ -107,6 +107,11 @@ class ZegoEngine with StateGuard {
     }
     _currentUser = user;
     setCurrentRoom(roomId);
+    _tokenManager.wireRefresh(
+      _eventBridge,
+      (room, tk) => futureFromJsPromise<void>(_js.renewToken(tk, room)),
+      _errorController,
+    );
   }
 
   Future<void> logoutRoom([String? roomId]) async {
