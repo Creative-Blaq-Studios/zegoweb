@@ -24,6 +24,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  pointycastle: ^3.9.1
+  args: ^2.5.0
 
 flutter:
   plugin:
