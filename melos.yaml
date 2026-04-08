@@ -1,0 +1,29 @@
+name: zegoweb
+repository: https://github.com/edwincoderyu/zegoweb
+
+packages:
+  - packages/*
+  - packages/*/example
+
+command:
+  bootstrap:
+    environment:
+      sdk: ">=3.4.0 <4.0.0"
+      flutter: ">=3.22.0"
+
+scripts:
+  analyze:
+    run: melos exec -- "flutter analyze"
+    description: Run flutter analyze in every package.
+
+  test:
+    run: melos exec --dir-exists=test -- "flutter test"
+    description: Run flutter test in every package that has a test directory.
+
+  format:
+    run: melos exec -- "dart format ."
+    description: Run dart format across every package.
+
+  format-check:
+    run: melos exec -- "dart format --set-exit-if-changed ."
+    description: Fail if any package is not formatted.
