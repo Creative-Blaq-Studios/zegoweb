@@ -266,12 +266,42 @@ class ZegoEngine with StateGuard {
 
   Future<ZegoRemoteStream> startPlaying(String streamId) async {
     requireAlive();
-    throw UnimplementedError('startPlaying — added in Task 28');
+    requireRoom();
+    ZegoLog.info('ZegoEngine.startPlaying streamId=$streamId');
+    final JSObject jsStream;
+    try {
+      jsStream = await futureFromJsPromise<JSObject>(
+        _js.startPlayingStream(streamId, null),
+        convert: (any) => any! as JSObject,
+      );
+    } catch (e, st) {
+      throw ZegoError(
+        -1,
+        'startPlaying failed: $e',
+        cause: e,
+        stackTrace: st,
+      );
+    }
+    final handle = zegoRemoteStreamInternal(streamId, jsStream);
+    _remotes[streamId] = handle;
+    return handle;
   }
 
   Future<void> stopPlaying(String streamId) async {
     requireAlive();
-    throw UnimplementedError('stopPlaying — added in Task 28');
+    ZegoLog.info('ZegoEngine.stopPlaying streamId=$streamId');
+    try {
+      await futureFromJsPromise<void>(_js.stopPlayingStream(streamId));
+    } catch (e, st) {
+      throw ZegoError(
+        -1,
+        'stopPlaying failed: $e',
+        cause: e,
+        stackTrace: st,
+      );
+    } finally {
+      _remotes.remove(streamId);
+    }
   }
 
   Future<List<ZegoDeviceInfo>> getCameras() async {
@@ -341,6 +371,18 @@ class ZegoEngine with StateGuard {
             ZegoNetworkException(
               event.errorCode ?? -1,
               'publisher state=${event.state} for ${event.streamId}',
+            ),
+          );
+        }
+      }),
+    );
+    _bridgeSubs.add(
+      _eventBridge.onPlayerStateUpdate.listen((event) {
+        if (event.isFailed) {
+          _errorController.add(
+            ZegoNetworkException(
+              event.errorCode ?? -1,
+              'player state=${event.state} for ${event.streamId}',
             ),
           );
         }
