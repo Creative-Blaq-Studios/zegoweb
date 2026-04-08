@@ -15,7 +15,23 @@ void _setGlobal(String key, JSAny? value) {
   (web.window as JSObject)[key] = value;
 }
 
-/// Remove every <script src="*zego-express-engine-webrtc*"> tag and any
+/// Find the inline `<script type="module">` tag SdkLoader injected.
+/// It has no `src` attribute; we identify it by searching the inline text
+/// for the ESM CDN hostname.
+web.HTMLScriptElement? _findInjectedModule() {
+  final scripts = web.document.querySelectorAll('script');
+  for (var i = 0; i < scripts.length; i++) {
+    final el = scripts.item(i);
+    if (el is web.HTMLScriptElement &&
+        el.type == 'module' &&
+        el.text.contains('zego-express-engine-webrtc')) {
+      return el;
+    }
+  }
+  return null;
+}
+
+/// Remove every injected <script type="module"> that we recognise, plus any
 /// existing ZegoExpressEngine global, so each test starts fresh.
 void _cleanSlate() {
   _setGlobal('ZegoExpressEngine', null);
@@ -23,11 +39,19 @@ void _cleanSlate() {
   for (var i = 0; i < scripts.length; i++) {
     final el = scripts.item(i);
     if (el is web.HTMLScriptElement &&
-        el.src.contains('zego-express-engine-webrtc')) {
+        el.type == 'module' &&
+        el.text.contains('zego-express-engine-webrtc')) {
       el.remove();
     }
   }
   SdkLoader.debugReset();
+}
+
+/// Fire the custom `zegoweb-sdk-ready` event that SdkLoader listens for.
+/// Used by tests that want to simulate a successful module execution without
+/// actually hitting the network.
+void _dispatchReadyEvent() {
+  web.window.dispatchEvent(web.Event('zegoweb-sdk-ready'));
 }
 
 void main() {
@@ -41,30 +65,24 @@ void main() {
       await SdkLoader.ready.timeout(const Duration(seconds: 1));
     });
 
-    test('loadScript injects a script tag with the requested version',
+    test('loadScript injects an inline module script with the version',
         () async {
-      // Fire-and-forget: we don't let the real network load; we install the
-      // global before the timeout fires, simulating onload.
+      // Fire-and-forget: the test never lets the real network module execute;
+      // it installs the global and fires the custom ready event instead.
       unawaited(SdkLoader.loadScript(version: '3.6.0'));
 
-      // Find the injected script element.
-      final scripts = web.document.querySelectorAll('script');
-      web.HTMLScriptElement? injected;
-      for (var i = 0; i < scripts.length; i++) {
-        final el = scripts.item(i);
-        if (el is web.HTMLScriptElement &&
-            el.src.contains('zego-express-engine-webrtc@3.6.0')) {
-          injected = el;
-          break;
-        }
-      }
-      expect(injected, isNotNull, reason: 'script tag was not injected');
-      expect(injected!.src, contains('unpkg.com'));
-      expect(injected.src, contains('@3.6.0'));
+      final injected = _findInjectedModule();
+      expect(injected, isNotNull, reason: 'module script was not injected');
+      expect(injected!.type, 'module');
+      // The inline text should contain the esm.sh import URL pinned to the
+      // requested version.
+      expect(injected.text, contains('esm.sh'));
+      expect(injected.text, contains('zego-express-engine-webrtc@3.6.0'));
+      expect(injected.text, contains("window.ZegoExpressEngine"));
 
-      // Simulate the script finishing.
+      // Simulate the module body finishing execution.
       _setGlobal('ZegoExpressEngine', JSObject());
-      injected.dispatchEvent(web.Event('load'));
+      _dispatchReadyEvent();
 
       await SdkLoader.ready.timeout(const Duration(seconds: 1));
     });
@@ -75,13 +93,14 @@ void main() {
       final f2 = SdkLoader.loadScript(version: '3.6.0');
       expect(identical(f1, f2), isTrue);
 
-      // Only one script tag should have been injected.
+      // Only one module script should have been injected.
       var count = 0;
       final scripts = web.document.querySelectorAll('script');
       for (var i = 0; i < scripts.length; i++) {
         final el = scripts.item(i);
         if (el is web.HTMLScriptElement &&
-            el.src.contains('zego-express-engine-webrtc')) {
+            el.type == 'module' &&
+            el.text.contains('zego-express-engine-webrtc')) {
           count++;
         }
       }
@@ -104,16 +123,7 @@ void main() {
 
     test('loadScript onerror rejects with ZegoStateError', () async {
       final f = SdkLoader.loadScript(version: '3.6.0');
-      final scripts = web.document.querySelectorAll('script');
-      web.HTMLScriptElement? injected;
-      for (var i = 0; i < scripts.length; i++) {
-        final el = scripts.item(i);
-        if (el is web.HTMLScriptElement &&
-            el.src.contains('zego-express-engine-webrtc')) {
-          injected = el;
-          break;
-        }
-      }
+      final injected = _findInjectedModule();
       expect(injected, isNotNull);
       injected!.dispatchEvent(web.Event('error'));
 

@@ -24,12 +24,20 @@ import 'models/zego_error.dart';
 /// All state is static because there is exactly one SDK global per page.
 abstract final class SdkLoader {
   static const Duration defaultTimeout = Duration(seconds: 30);
-  // unpkg redirects `/zego-express-engine-webrtc@<version>` (no path) to the
-  // package's main entry file, which is `ZegoExpressWebRTC.js`. Hard-coding
-  // `/index.js` would 404. Dropping the path suffix makes us robust to
-  // future ZEGO-side renames of the main file.
-  static const String _cdnTemplate =
-      'https://unpkg.com/zego-express-engine-webrtc@%VERSION%';
+  // The zego-express-engine-webrtc package does not ship a browser-ready
+  // UMD bundle — its main file (ZegoExpressWebRTC.js) is a UMD wrapper that
+  // tries to `require()` four CJS dependencies (long, protobufjs, localforage,
+  // zego-express-logger) and falls back to reading them from globals in the
+  // browser path, which will never exist. The intended consumption model is
+  // npm + a bundler (webpack/vite/rollup).
+  //
+  // For script-tag loading we route through esm.sh, which does on-the-fly
+  // bundling of npm packages into ES modules with transitive deps inlined.
+  // We inject a `<script type="module">` that imports the default export and
+  // assigns it to `window.ZegoExpressEngine` so the rest of the plugin can
+  // find it via the existing @JS('ZegoExpressEngine') extern.
+  static const String _esmTemplate =
+      'https://esm.sh/zego-express-engine-webrtc@%VERSION%';
 
   static Completer<void>? _completer;
   static Future<void>? _loadScriptFuture;
@@ -88,8 +96,18 @@ abstract final class SdkLoader {
     return c.future;
   }
 
-  /// Inject the SDK via a dynamic <script> tag. Idempotent: subsequent calls
-  /// return the exact same Future.
+  /// Inject the SDK via a dynamic <script type="module"> tag. Idempotent:
+  /// subsequent calls return the exact same Future.
+  ///
+  /// The script is inline (no `src` attribute) and does:
+  /// ```js
+  /// import ZegoExpressEngine from 'https://esm.sh/zego-express-engine-webrtc@<version>';
+  /// window.ZegoExpressEngine = ZegoExpressEngine;
+  /// window.__zegowebSdkReady = true;
+  /// ```
+  /// We poll `window.ZegoExpressEngine` to decide when the module finished
+  /// executing — ES-module scripts don't fire a `load` event on the tag that
+  /// reliably signals "import completed", so a short poll is simplest.
   static Future<void> loadScript({String? version}) {
     // Fast-path: already loaded.
     if (_hasGlobal()) {
@@ -104,28 +122,35 @@ abstract final class SdkLoader {
     _completer = completer;
     _loadScriptFuture = completer.future;
 
-    final src = _cdnTemplate.replaceFirst('%VERSION%', version ?? 'latest');
+    final esmUrl = _esmTemplate.replaceFirst('%VERSION%', version ?? 'latest');
     final tag = web.HTMLScriptElement()
-      ..src = src
+      ..type = 'module'
+      ..text = '''
+import ZegoExpressEngine from '$esmUrl';
+window.ZegoExpressEngine = ZegoExpressEngine;
+window.dispatchEvent(new Event('zegoweb-sdk-ready'));
+'''
       ..async = true
       ..defer = false;
     _injectedTag = tag;
 
-    tag.addEventListener(
-      'load',
+    // An ES-module <script> fires its tag-level 'load' event when the module
+    // text has been fetched, but NOT after the module body has finished
+    // executing. We listen to our custom 'zegoweb-sdk-ready' event instead,
+    // which is dispatched from inside the module body above.
+    web.window.addEventListener(
+      'zegoweb-sdk-ready',
       ((web.Event _) {
+        if (completer.isCompleted) return;
         if (_hasGlobal()) {
-          if (!completer.isCompleted) completer.complete();
+          completer.complete();
         } else {
-          if (!completer.isCompleted) {
-            completer.completeError(
-              const ZegoStateError(
-                -1,
-                'SDK script loaded but window.ZegoExpressEngine is undefined '
-                '(wrong URL or blocked by CSP?)',
-              ),
-            );
-          }
+          completer.completeError(
+            const ZegoStateError(
+              -1,
+              'SDK module executed but window.ZegoExpressEngine is undefined',
+            ),
+          );
         }
       }).toJS,
     );
@@ -137,7 +162,7 @@ abstract final class SdkLoader {
           completer.completeError(
             ZegoStateError(
               -1,
-              'Failed to load ZEGO SDK script from $src',
+              'Failed to load ZEGO SDK module from $esmUrl',
             ),
           );
         }
