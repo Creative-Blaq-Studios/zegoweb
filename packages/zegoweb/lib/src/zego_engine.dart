@@ -1,6 +1,7 @@
 // packages/zegoweb/lib/src/zego_engine.dart
 import 'dart:async';
 import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 
 import 'package:meta/meta.dart';
 
@@ -146,7 +147,85 @@ class ZegoEngine with StateGuard {
 
   Future<ZegoLocalStream> createLocalStream({ZegoStreamConfig? config}) async {
     requireAlive();
-    throw UnimplementedError('createLocalStream — added in Task 26');
+    final cfg = config ?? const ZegoStreamConfig();
+    ZegoLog.info('ZegoEngine.createLocalStream config=$cfg');
+    final jsConfig = cfg.toJs();
+    final JSObject jsStream;
+    try {
+      jsStream = await futureFromJsPromise<JSObject>(
+        _js.createStream(jsConfig),
+        convert: (any) => any! as JSObject,
+      );
+    } catch (e, st) {
+      throw _mapMediaError(e, st);
+    }
+    final streamId = (jsStream['streamID'] as JSString?)?.toDart ??
+        'local-${DateTime.now().microsecondsSinceEpoch}';
+    final handle = zegoLocalStreamInternal(streamId, jsStream);
+    _locals[streamId] = handle;
+    return handle;
+  }
+
+  ZegoError _mapMediaError(Object e, StackTrace st) {
+    if (e is ZegoPermissionException) return e;
+    // The promise adapter wraps unknown JS rejections as ZegoError(-1, ...)
+    // and stores the original JS object in `cause`. For DOMException-shaped
+    // errors that's where `.name` lives.
+    final domName = _readDomExceptionName(e);
+    final msg = e is ZegoError ? e.message : e.toString();
+    if (domName == 'NotAllowedError' ||
+        msg.contains('NotAllowedError') ||
+        msg.contains('Permission denied')) {
+      return ZegoPermissionException(
+        1103065,
+        'Camera/microphone permission denied: $msg',
+        kind: PermissionErrorKind.denied,
+        cause: e,
+        stackTrace: st,
+      );
+    }
+    if (domName == 'NotFoundError' || msg.contains('NotFoundError')) {
+      return ZegoPermissionException(
+        1103066,
+        'No camera/microphone device found: $msg',
+        kind: PermissionErrorKind.notFound,
+        cause: e,
+        stackTrace: st,
+      );
+    }
+    if (domName == 'NotReadableError' || msg.contains('NotReadableError')) {
+      return ZegoPermissionException(
+        1103067,
+        'Camera/microphone is in use by another app: $msg',
+        kind: PermissionErrorKind.inUse,
+        cause: e,
+        stackTrace: st,
+      );
+    }
+    if (e is ZegoError) return e;
+    return ZegoError(
+      -1,
+      'createLocalStream failed: $e',
+      cause: e,
+      stackTrace: st,
+    );
+  }
+
+  /// Reads `.name` off a DOMException-shaped JS object that was wrapped by
+  /// the promise adapter into a ZegoError's `cause`. Returns null if [e] is
+  /// not a wrapped JS object.
+  String? _readDomExceptionName(Object e) {
+    JSObject? jsObj;
+    if (e is ZegoError) {
+      final cause = e.cause;
+      if (cause is JSObject) jsObj = cause;
+    } else if (e is JSObject) {
+      jsObj = e;
+    }
+    if (jsObj == null) return null;
+    final raw = jsObj['name'];
+    if (raw is JSString) return raw.toDart;
+    return null;
   }
 
   Future<void> startPublishing(String streamId, ZegoLocalStream stream) async {
