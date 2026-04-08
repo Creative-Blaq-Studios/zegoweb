@@ -39,8 +39,13 @@ bool get isZegoJsLoaded {
 
 /// The JS `ZegoExpressEngine` instance produced by `new ZegoExpressEngine(...)`.
 ///
+/// The `@JS('ZegoExpressEngine')` annotation tells dart:js_interop that the
+/// constructor lives at `window.ZegoExpressEngine` even though we name the
+/// Dart-side extension type `ZegoExpressEngineJs`.
+///
 /// All async methods return `JSPromise`; callers MUST route through
 /// `promise_adapter.dart` so JS errors become typed `ZegoError`s.
+@JS('ZegoExpressEngine')
 extension type ZegoExpressEngineJs._(JSObject _) implements JSObject {
   external factory ZegoExpressEngineJs(int appID, String server);
 
