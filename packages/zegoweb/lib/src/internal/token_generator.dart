@@ -18,16 +18,27 @@ import 'package:pointycastle/export.dart';
 
 /// Generates a ZEGO `token04` string.
 ///
-/// Algorithm (as published by ZEGOCLOUD for token04):
+/// Algorithm (as documented by ZEGOCLOUD and implemented by their official
+/// `zego-server-assistant` npm package):
+///
 ///  1. Build a JSON payload:
 ///       { "app_id", "user_id", "nonce", "ctime", "expire", "payload" }
-///  2. Concatenate: [expire i64 BE (8)] + [nonce i64 BE (8)] + [payload bytes]
-///     (the "plain text" for encryption).
-///  3. Encrypt with AES-128-GCM using the first 16 bytes of [serverSecret] as
-///     the key and a random 16-byte IV.
-///  4. Token = base64( "04" + iv(16) + ciphertext+tag ).
+///     The plaintext is the utf8-encoded JSON string — NOT prefixed with any
+///     length or timestamp fields.
 ///
-/// AES-128-GCM is provided by `package:pointycastle` (pure Dart, sync).
+///  2. Encrypt with AES-128-CBC + PKCS#7 padding, using:
+///       - key: the first 16 bytes of [serverSecret] (as utf8 bytes)
+///       - iv:  a random 16-byte nonce
+///
+///  3. Build a binary buffer:
+///       expire (8 bytes i64 BE)
+///       iv_length (2 bytes u16 BE) = 16
+///       iv (16 bytes)
+///       cipher_length (2 bytes u16 BE)
+///       cipher (N bytes)
+///
+///  4. Return: the literal prefix "04" concatenated with the base64 of that
+///     buffer. The "04" is OUTSIDE the base64, not part of the base64 payload.
 String generateToken04({
   required int appId,
   required String userId,
@@ -56,13 +67,7 @@ String generateToken04({
     'expire': expire,
     'payload': '',
   };
-  final payloadJson = utf8.encode(jsonEncode(payloadMap));
-
-  // [expire BE i64] + [nonce BE i64] + [payloadJson]
-  final plainText = BytesBuilder()
-    ..add(_int64BE(expire))
-    ..add(_int64BE(nonce))
-    ..add(payloadJson);
+  final plaintext = Uint8List.fromList(utf8.encode(jsonEncode(payloadMap)));
 
   final iv = Uint8List.fromList(
     List<int>.generate(16, (_) => rng.nextInt(256)),
@@ -71,18 +76,21 @@ String generateToken04({
     utf8.encode(serverSecret).sublist(0, 16),
   );
 
-  final ciphertextAndTag = _aesGcmEncrypt(
+  final cipher = _aesCbcPkcs7Encrypt(
     key: keyBytes,
     iv: iv,
-    plaintext: plainText.toBytes(),
+    plaintext: plaintext,
   );
 
-  final out = BytesBuilder()
-    ..add(utf8.encode('04'))
+  // Buffer layout: expire(8) + ivLen(2) + iv(16) + cipherLen(2) + cipher(N)
+  final buf = BytesBuilder()
+    ..add(_int64BE(expire))
+    ..add(_uint16BE(iv.length))
     ..add(iv)
-    ..add(ciphertextAndTag);
+    ..add(_uint16BE(cipher.length))
+    ..add(cipher);
 
-  return base64.encode(out.toBytes());
+  return '04${base64.encode(buf.toBytes())}';
 }
 
 Uint8List _int64BE(int value) {
@@ -91,24 +99,28 @@ Uint8List _int64BE(int value) {
   return b.buffer.asUint8List();
 }
 
-/// Real AES-128-GCM via pointycastle. Returns ciphertext concatenated with the
-/// 16-byte authentication tag (the standard GCM output layout that ZEGO's
-/// server-side libraries also produce and that their backend expects).
-Uint8List _aesGcmEncrypt({
+Uint8List _uint16BE(int value) {
+  final b = ByteData(2);
+  b.setUint16(0, value, Endian.big);
+  return b.buffer.asUint8List();
+}
+
+/// AES-128-CBC with PKCS#7 padding via pointycastle. ZEGO's server-side
+/// token verifier expects this exact scheme — GCM and unpadded CBC are both
+/// rejected with `50120 token format err`.
+Uint8List _aesCbcPkcs7Encrypt({
   required Uint8List key,
   required Uint8List iv,
   required Uint8List plaintext,
 }) {
   assert(key.length == 16, 'AES-128 key must be exactly 16 bytes');
   assert(iv.length == 16, 'IV must be exactly 16 bytes');
-  final cipher = GCMBlockCipher(AESEngine())
+  final cipher = PaddedBlockCipher('AES/CBC/PKCS7')
     ..init(
       true, // forEncryption
-      AEADParameters(
-        KeyParameter(key),
-        128, // tag length in bits
-        iv,
-        Uint8List(0), // no associated data
+      PaddedBlockCipherParameters<CipherParameters, CipherParameters>(
+        ParametersWithIV<KeyParameter>(KeyParameter(key), iv),
+        null,
       ),
     );
   return cipher.process(plaintext);
