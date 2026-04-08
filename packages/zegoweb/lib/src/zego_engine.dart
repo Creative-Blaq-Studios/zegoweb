@@ -228,14 +228,40 @@ class ZegoEngine with StateGuard {
     return null;
   }
 
-  Future<void> startPublishing(String streamId, ZegoLocalStream stream) async {
+  Future<void> startPublishing(
+    String streamId,
+    ZegoLocalStream stream,
+  ) async {
     requireAlive();
-    throw UnimplementedError('startPublishing — added in Task 27');
+    requireRoom();
+    ZegoLog.info('ZegoEngine.startPublishing streamId=$streamId');
+    try {
+      await futureFromJsPromise<void>(
+        _js.startPublishingStream(streamId, stream.jsStream),
+      );
+    } catch (e, st) {
+      throw ZegoError(
+        -1,
+        'startPublishing failed: $e',
+        cause: e,
+        stackTrace: st,
+      );
+    }
   }
 
   Future<void> stopPublishing(String streamId) async {
     requireAlive();
-    throw UnimplementedError('stopPublishing — added in Task 27');
+    ZegoLog.info('ZegoEngine.stopPublishing streamId=$streamId');
+    try {
+      await futureFromJsPromise<void>(_js.stopPublishingStream(streamId));
+    } catch (e, st) {
+      throw ZegoError(
+        -1,
+        'stopPublishing failed: $e',
+        cause: e,
+        stackTrace: st,
+      );
+    }
   }
 
   Future<ZegoRemoteStream> startPlaying(String streamId) async {
@@ -307,6 +333,18 @@ class ZegoEngine with StateGuard {
     );
     _bridgeSubs.add(
       _eventBridge.onRoomStreamUpdate.listen(_streamUpdateController.add),
+    );
+    _bridgeSubs.add(
+      _eventBridge.onPublisherStateUpdate.listen((event) {
+        if (event.isFailed) {
+          _errorController.add(
+            ZegoNetworkException(
+              event.errorCode ?? -1,
+              'publisher state=${event.state} for ${event.streamId}',
+            ),
+          );
+        }
+      }),
     );
   }
 
