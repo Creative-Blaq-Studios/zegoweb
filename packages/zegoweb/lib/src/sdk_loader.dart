@@ -24,8 +24,12 @@ import 'models/zego_error.dart';
 /// All state is static because there is exactly one SDK global per page.
 abstract final class SdkLoader {
   static const Duration defaultTimeout = Duration(seconds: 30);
+  // unpkg redirects `/zego-express-engine-webrtc@<version>` (no path) to the
+  // package's main entry file, which is `ZegoExpressWebRTC.js`. Hard-coding
+  // `/index.js` would 404. Dropping the path suffix makes us robust to
+  // future ZEGO-side renames of the main file.
   static const String _cdnTemplate =
-      'https://unpkg.com/zego-express-engine-webrtc@%VERSION%/index.js';
+      'https://unpkg.com/zego-express-engine-webrtc@%VERSION%';
 
   static Completer<void>? _completer;
   static Future<void>? _loadScriptFuture;
