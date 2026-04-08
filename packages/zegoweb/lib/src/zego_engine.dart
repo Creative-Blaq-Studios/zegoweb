@@ -5,6 +5,8 @@ import 'dart:js_interop_unsafe';
 
 import 'package:meta/meta.dart';
 
+import 'package:web/web.dart' as web;
+
 import 'interop/event_bridge.dart';
 import 'interop/promise_adapter.dart';
 import 'interop/zego_js.dart';
@@ -306,32 +308,77 @@ class ZegoEngine with StateGuard {
 
   Future<List<ZegoDeviceInfo>> getCameras() async {
     requireAlive();
-    throw UnimplementedError('getCameras — added in Task 29');
+    final jsList = await futureFromJsPromise<JSArray<JSObject>>(
+      _js.getCameras(),
+      convert: (any) => any! as JSArray<JSObject>,
+    );
+    return _mapDeviceList(jsList);
   }
 
   Future<List<ZegoDeviceInfo>> getMicrophones() async {
     requireAlive();
-    throw UnimplementedError('getMicrophones — added in Task 29');
+    final jsList = await futureFromJsPromise<JSArray<JSObject>>(
+      _js.getMicrophones(),
+      convert: (any) => any! as JSArray<JSObject>,
+    );
+    return _mapDeviceList(jsList);
+  }
+
+  List<ZegoDeviceInfo> _mapDeviceList(JSArray<JSObject> jsList) {
+    final out = <ZegoDeviceInfo>[];
+    for (var i = 0; i < jsList.length; i++) {
+      final entry = jsList[i];
+      final id = (entry['deviceID'] as JSString?)?.toDart ?? '';
+      final name = (entry['deviceName'] as JSString?)?.toDart ?? '';
+      out.add(ZegoDeviceInfo(deviceId: id, deviceName: name));
+    }
+    return out;
+  }
+
+  /// Returns the most-recently-created local stream, or throws a
+  /// [ZegoStateError] with an actionable message if none exists. Device
+  /// methods target this stream because the JS SDK binds camera/mic changes
+  /// to a specific `MediaStream`.
+  ZegoLocalStream _requireLocalStream(String op) {
+    if (_locals.isEmpty) {
+      throw ZegoStateError(
+        -3,
+        '$op requires an active local stream; call createLocalStream first',
+      );
+    }
+    return _locals.values.last;
   }
 
   Future<void> useCamera(String deviceId) async {
     requireAlive();
-    throw UnimplementedError('useCamera — added in Task 29');
+    final local = _requireLocalStream('useCamera');
+    await futureFromJsPromise<void>(
+      _js.useVideoDevice(local.jsStream, deviceId),
+    );
   }
 
   Future<void> useMicrophone(String deviceId) async {
     requireAlive();
-    throw UnimplementedError('useMicrophone — added in Task 29');
+    final local = _requireLocalStream('useMicrophone');
+    await futureFromJsPromise<void>(
+      _js.useAudioDevice(local.jsStream, deviceId),
+    );
   }
 
   Future<void> muteMicrophone(bool mute) async {
     requireAlive();
-    throw UnimplementedError('muteMicrophone — added in Task 29');
+    final local = _requireLocalStream('muteMicrophone');
+    await futureFromJsPromise<void>(
+      _js.mutePublishStreamAudio(local.jsStream, mute),
+    );
   }
 
   Future<void> enableCamera(bool enable) async {
     requireAlive();
-    throw UnimplementedError('enableCamera — added in Task 29');
+    final local = _requireLocalStream('enableCamera');
+    await futureFromJsPromise<void>(
+      _js.enableVideoCaptureDevice(local.jsStream, enable),
+    );
   }
 
   Future<ZegoPermissionStatus> checkPermissions({
@@ -339,7 +386,57 @@ class ZegoEngine with StateGuard {
     bool mic = true,
   }) async {
     requireAlive();
-    throw UnimplementedError('checkPermissions — added in Task 29');
+
+    Future<ZegoPermissionStatus> query(String name) async {
+      try {
+        final navObj = web.window.navigator as JSObject;
+        final perms = navObj['permissions'];
+        if (perms == null) return ZegoPermissionStatus.unavailable;
+        final queryFn = (perms as JSObject)['query'] as JSFunction;
+        final descriptor =
+            <String, Object?>{'name': name}.jsify() as JSObject;
+        final promise =
+            queryFn.callAsFunction(perms, descriptor) as JSPromise<JSAny?>;
+        final result = (await promise.toDart) as JSObject;
+        final state = (result['state'] as JSString?)?.toDart;
+        switch (state) {
+          case 'granted':
+            return ZegoPermissionStatus.granted;
+          case 'denied':
+            return ZegoPermissionStatus.denied;
+          case 'prompt':
+            return ZegoPermissionStatus.prompt;
+          default:
+            return ZegoPermissionStatus.unavailable;
+        }
+      } catch (_) {
+        return ZegoPermissionStatus.prompt;
+      }
+    }
+
+    ZegoPermissionStatus merge(
+      ZegoPermissionStatus a,
+      ZegoPermissionStatus b,
+    ) {
+      if (a == ZegoPermissionStatus.denied ||
+          b == ZegoPermissionStatus.denied) {
+        return ZegoPermissionStatus.denied;
+      }
+      if (a == ZegoPermissionStatus.prompt ||
+          b == ZegoPermissionStatus.prompt) {
+        return ZegoPermissionStatus.prompt;
+      }
+      if (a == ZegoPermissionStatus.unavailable ||
+          b == ZegoPermissionStatus.unavailable) {
+        return ZegoPermissionStatus.unavailable;
+      }
+      return ZegoPermissionStatus.granted;
+    }
+
+    ZegoPermissionStatus worst = ZegoPermissionStatus.granted;
+    if (camera) worst = merge(worst, await query('camera'));
+    if (mic) worst = merge(worst, await query('microphone'));
+    return worst;
   }
 
   void _wireEventStreams() {
