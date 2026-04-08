@@ -123,12 +123,30 @@ abstract final class SdkLoader {
     _loadScriptFuture = completer.future;
 
     final esmUrl = _esmTemplate.replaceFirst('%VERSION%', version ?? 'latest');
+    // The esm.sh default export for zego-express-engine-webrtc is the SDK's
+    // namespace object, not the class — the class constructor is at
+    // `.ZegoExpressEngine` on that namespace. Assign it explicitly so
+    // `new ZegoExpressEngine(...)` on the Dart side hits the real ctor.
+    // We also surface any import failure onto our custom ready event so
+    // SdkLoader.loadScript can reject cleanly rather than hanging.
     final tag = web.HTMLScriptElement()
       ..type = 'module'
       ..text = '''
-import ZegoExpressEngine from '$esmUrl';
-window.ZegoExpressEngine = ZegoExpressEngine;
-window.dispatchEvent(new Event('zegoweb-sdk-ready'));
+try {
+  const mod = await import('$esmUrl');
+  const ns = mod.default ?? mod;
+  const ctor = ns.ZegoExpressEngine ?? ns.default ?? ns;
+  if (typeof ctor !== 'function') {
+    throw new Error('esm.sh returned '
+      + (typeof ctor) + ', expected a constructor function. '
+      + 'Keys on namespace: ' + Object.keys(ns).slice(0, 20).join(', '));
+  }
+  window.ZegoExpressEngine = ctor;
+  window.dispatchEvent(new Event('zegoweb-sdk-ready'));
+} catch (err) {
+  window.__zegowebLoadError = String(err && err.message ? err.message : err);
+  window.dispatchEvent(new Event('zegoweb-sdk-ready'));
+}
 '''
       ..async = true
       ..defer = false;
@@ -137,11 +155,26 @@ window.dispatchEvent(new Event('zegoweb-sdk-ready'));
     // An ES-module <script> fires its tag-level 'load' event when the module
     // text has been fetched, but NOT after the module body has finished
     // executing. We listen to our custom 'zegoweb-sdk-ready' event instead,
-    // which is dispatched from inside the module body above.
+    // which is dispatched from inside the module body above — both on
+    // success and on a caught import error.
     web.window.addEventListener(
       'zegoweb-sdk-ready',
       ((web.Event _) {
         if (completer.isCompleted) return;
+        final winObj = web.window as JSObject;
+        final loadErr = winObj['__zegowebLoadError'];
+        if (loadErr != null) {
+          final msg = loadErr is JSString
+              ? loadErr.toDart
+              : loadErr.toString();
+          completer.completeError(
+            ZegoStateError(
+              -1,
+              'Failed to import ZEGO SDK module: $msg',
+            ),
+          );
+          return;
+        }
         if (_hasGlobal()) {
           completer.complete();
         } else {
@@ -193,5 +226,6 @@ window.dispatchEvent(new Event('zegoweb-sdk-ready'));
     _loadScriptFuture = null;
     _injectedTag?.remove();
     _injectedTag = null;
+    (web.window as JSObject)['__zegowebLoadError'] = null;
   }
 }

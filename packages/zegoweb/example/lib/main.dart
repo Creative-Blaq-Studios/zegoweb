@@ -199,7 +199,7 @@ class _CallScreenState extends State<CallScreen> {
               ),
             ],
             const SizedBox(height: 8),
-            Text('Status: $_status'),
+            SelectableText('Status: $_status'),
           ],
         ),
       ),
