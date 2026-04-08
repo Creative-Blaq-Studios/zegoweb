@@ -3,7 +3,6 @@
 library;
 
 import 'dart:js_interop';
-import 'dart:js_interop_unsafe';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zegoweb/src/interop/event_bridge.dart';
@@ -28,23 +27,20 @@ void main() {
 
     test('registerEvent returns a broadcast stream and delivers events',
         () async {
+      // Extract the second positional arg (state) — matches the real SDK's
+      // roomStateUpdate(roomID, state, errorCode, extendedData) signature.
       final stream = bridge.registerEvent<String>(
         'roomStateUpdate',
-        (raw) => ((raw as JSObject)['state'] as JSString).toDart,
+        (args) => (args[1]! as JSString).toDart,
       );
       expect(stream.isBroadcast, isTrue);
 
       final received = <String>[];
       final sub = stream.listen(received.add);
 
-      fake.driveEvent(
-        'roomStateUpdate',
-        <String, Object?>{'state': 'CONNECTED'}.jsify(),
-      );
-      fake.driveEvent(
-        'roomStateUpdate',
-        <String, Object?>{'state': 'DISCONNECTED'}.jsify(),
-      );
+      fake.driveEventArgs('roomStateUpdate', ['room-1'.toJS, 'CONNECTED'.toJS]);
+      fake.driveEventArgs(
+          'roomStateUpdate', ['room-1'.toJS, 'DISCONNECTED'.toJS]);
 
       await Future<void>.delayed(Duration.zero);
       expect(received, <String>['CONNECTED', 'DISCONNECTED']);
@@ -55,35 +51,47 @@ void main() {
     test(
         'registerEvent called twice for the same name returns the SAME stream '
         'and registers exactly one JS listener', () async {
-      final a = bridge.registerEvent<JSAny?>('roomUserUpdate', (r) => r);
-      final b = bridge.registerEvent<JSAny?>('roomUserUpdate', (r) => r);
+      final a = bridge.registerEvent<JSAny?>(
+        'roomUserUpdate',
+        (args) => args.isNotEmpty ? args[0] : null,
+      );
+      final b = bridge.registerEvent<JSAny?>(
+        'roomUserUpdate',
+        (args) => args.isNotEmpty ? args[0] : null,
+      );
       expect(identical(a, b), isTrue);
       expect(fake.listenerCount('roomUserUpdate'), 1);
     });
 
     test('dispose removes JS listeners and closes controllers', () async {
-      final stream =
-          bridge.registerEvent<JSAny?>('roomStreamUpdate', (r) => r);
-      final received = <Object?>[];
+      // Parse into a plain Dart string so the assertion list is trivial.
+      final stream = bridge.registerEvent<String>(
+        'roomStreamUpdate',
+        (args) => (args[0]! as JSString).toDart,
+      );
+      final received = <String>[];
       final sub =
           stream.listen(received.add, onDone: () => received.add('#done'));
 
-      fake.driveEvent('roomStreamUpdate', 'first'.toJS);
+      fake.driveEventArgs('roomStreamUpdate', ['first'.toJS]);
       await Future<void>.delayed(Duration.zero);
-      expect(received, <Object?>['first']);
+      expect(received, <String>['first']);
 
       await bridge.dispose();
       expect(fake.listenerCount('roomStreamUpdate'), 0);
 
-      fake.driveEvent('roomStreamUpdate', 'late'.toJS);
+      fake.driveEventArgs('roomStreamUpdate', ['late'.toJS]);
       await Future<void>.delayed(Duration.zero);
-      expect(received, <Object?>['first', '#done']);
+      expect(received, <String>['first', '#done']);
 
       await sub.cancel();
     });
 
     test('dispose is idempotent', () async {
-      bridge.registerEvent<JSAny?>('publisherStateUpdate', (r) => r);
+      bridge.registerEvent<JSAny?>(
+        'publisherStateUpdate',
+        (args) => args.isNotEmpty ? args[0] : null,
+      );
       await bridge.dispose();
       await bridge.dispose(); // must not throw
     });

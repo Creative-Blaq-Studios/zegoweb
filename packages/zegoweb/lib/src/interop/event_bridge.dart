@@ -41,7 +41,23 @@ class EventBridge implements TokenBridge {
   /// function converts the raw JS payload into the Dart-side model type.
   ///
   /// Returns a `Stream<T>` backed by a `StreamController<T>.broadcast()`.
-  Stream<T> registerEvent<T>(String eventName, T Function(JSAny?) parse) {
+  /// Register (or look up) a broadcast stream for [eventName]. The [parse]
+  /// function converts the raw positional JS arguments into the Dart-side
+  /// model type. The arg list is always exactly 4 entries — unused slots
+  /// are `null`. Four slots cover every event the plugin handles:
+  ///
+  ///   * roomStateUpdate(roomID, state, errorCode, extendedData) — 4 args
+  ///   * roomStreamUpdate(roomID, updateType, streamList, extendedData) — 4 args
+  ///   * roomUserUpdate(roomID, updateType, userList) — 3 args (args[3]=null)
+  ///   * publisherStateUpdate(result) — 1 arg (args[1..3]=null)
+  ///   * playerStateUpdate(result) — 1 arg
+  ///   * tokenWillExpire(roomID) — 1 arg
+  ///
+  /// Returns a `Stream<T>` backed by a `StreamController<T>.broadcast()`.
+  Stream<T> registerEvent<T>(
+    String eventName,
+    T Function(List<JSAny?> args) parse,
+  ) {
     if (_disposed) {
       throw StateError('EventBridge disposed — cannot register "$eventName"');
     }
@@ -54,10 +70,20 @@ class EventBridge implements TokenBridge {
     final controller = StreamController<T>.broadcast();
     final stream = controller.stream;
 
-    void dartCallback(JSAny? payload) {
+    // dart:js_interop's `.toJS` converts a Dart function with up to several
+    // positional parameters into a JSFunction. JS callers can supply any
+    // number of args; Dart receives up to the declared count and missing
+    // args become null. Four slots match the maximum arity of any event the
+    // plugin wires.
+    void dartCallback([
+      JSAny? a0,
+      JSAny? a1,
+      JSAny? a2,
+      JSAny? a3,
+    ]) {
       if (controller.isClosed) return;
       try {
-        controller.add(parse(payload));
+        controller.add(parse(<JSAny?>[a0, a1, a2, a3]));
       } catch (err, st) {
         controller.addError(err, st);
       }
@@ -172,13 +198,28 @@ int? _readInt(JSObject obj, String key) {
   return null;
 }
 
+/// Maps the state string on both `roomStateUpdate` and `roomStateChanged`
+/// into the plugin's simpler 3-state enum. The legacy event uses
+/// CONNECTED/CONNECTING/DISCONNECTED; the newer event uses a reason enum
+/// with ~10 values (LOGINING, LOGINED, LOGIN_FAILED, RECONNECTING,
+/// RECONNECTED, RECONNECT_FAILED, KICKOUT, LOGOUT, LOGOUT_FAILED). We
+/// collapse both sets into connected / connecting / disconnected.
 ZegoRoomState _parseRoomStateEnum(String? raw) {
   switch (raw) {
     case 'CONNECTED':
+    case 'LOGINED':
+    case 'RECONNECTED':
       return ZegoRoomState.connected;
     case 'CONNECTING':
+    case 'LOGINING':
+    case 'RECONNECTING':
       return ZegoRoomState.connecting;
     case 'DISCONNECTED':
+    case 'LOGIN_FAILED':
+    case 'LOGOUT':
+    case 'LOGOUT_FAILED':
+    case 'KICKOUT':
+    case 'RECONNECT_FAILED':
     default:
       return ZegoRoomState.disconnected;
   }
@@ -196,21 +237,60 @@ ZegoUpdateType _parseUpdateTypeEnum(String? raw) {
   }
 }
 
-ZegoRoomStateChanged _parseRoomStateChanged(JSAny? raw) {
-  final o = raw as JSObject;
+// Positional-arg helpers — pull a JSString/JSNumber out of a slot returned
+// from a Dart-side dartCallback(...args) wrapper.
+
+String? _argString(List<JSAny?> args, int i) {
+  if (i >= args.length) return null;
+  final v = args[i];
+  if (v == null) return null;
+  if (v.isA<JSString>()) return (v as JSString).toDart;
+  return null;
+}
+
+int? _argInt(List<JSAny?> args, int i) {
+  if (i >= args.length) return null;
+  final v = args[i];
+  if (v == null) return null;
+  if (v.isA<JSNumber>()) return (v as JSNumber).toDartInt;
+  return null;
+}
+
+JSObject? _argObject(List<JSAny?> args, int i) {
+  if (i >= args.length) return null;
+  final v = args[i];
+  if (v == null) return null;
+  if (v.isA<JSObject>()) return v as JSObject;
+  return null;
+}
+
+JSArray<JSObject>? _argArray(List<JSAny?> args, int i) {
+  final obj = _argObject(args, i);
+  if (obj == null) return null;
+  return obj as JSArray<JSObject>;
+}
+
+/// Parses `roomStateUpdate(roomID, state, errorCode, extendedData)`.
+///
+/// Uses the legacy 3-state enum (CONNECTED / CONNECTING / DISCONNECTED)
+/// rather than the newer `roomStateChanged` event, which fires a reason
+/// enum with ~10 values (LOGINING, LOGINED, LOGIN_FAILED, …). The legacy
+/// event still fires in 3.12 and the simpler state machine is sufficient
+/// for every consumer of this plugin.
+ZegoRoomStateChanged _parseRoomStateChanged(List<JSAny?> args) {
   return ZegoRoomStateChanged(
-    roomId: _readString(o, 'roomID') ?? '',
-    state: _parseRoomStateEnum(_readString(o, 'state')),
-    errorCode: _readInt(o, 'errorCode'),
-    extendedData: _readString(o, 'extendedData'),
+    roomId: _argString(args, 0) ?? '',
+    state: _parseRoomStateEnum(_argString(args, 1)),
+    errorCode: _argInt(args, 2),
+    extendedData: _argString(args, 3),
   );
 }
 
-ZegoRoomUserUpdate _parseRoomUserUpdate(JSAny? raw) {
-  final o = raw as JSObject;
-  final list = (o['userList'] as JSArray<JSObject>?) ??
-      (o['users'] as JSArray<JSObject>?) ??
-      JSArray<JSObject>();
+/// Parses `roomUserUpdate(roomID, updateType, userList)`.
+ZegoRoomUserUpdate _parseRoomUserUpdate(List<JSAny?> args) {
+  final roomId = _argString(args, 0) ?? '';
+  final updateType = _parseUpdateTypeEnum(_argString(args, 1));
+  final list = _argArray(args, 2) ?? JSArray<JSObject>();
   final users = <ZegoUser>[];
   for (var i = 0; i < list.length; i++) {
     final u = list[i];
@@ -222,17 +302,17 @@ ZegoRoomUserUpdate _parseRoomUserUpdate(JSAny? raw) {
     );
   }
   return ZegoRoomUserUpdate(
-    roomId: _readString(o, 'roomID') ?? '',
-    type: _parseUpdateTypeEnum(_readString(o, 'updateType')),
+    roomId: roomId,
+    type: updateType,
     users: users,
   );
 }
 
-ZegoRoomStreamUpdate _parseRoomStreamUpdate(JSAny? raw) {
-  final o = raw as JSObject;
-  final list = (o['streamList'] as JSArray<JSObject>?) ??
-      (o['streams'] as JSArray<JSObject>?) ??
-      JSArray<JSObject>();
+/// Parses `roomStreamUpdate(roomID, updateType, streamList, extendedData)`.
+ZegoRoomStreamUpdate _parseRoomStreamUpdate(List<JSAny?> args) {
+  final roomId = _argString(args, 0) ?? '';
+  final updateType = _parseUpdateTypeEnum(_argString(args, 1));
+  final list = _argArray(args, 2) ?? JSArray<JSObject>();
   final streams = <ZegoStreamInfo>[];
   for (var i = 0; i < list.length; i++) {
     final s = list[i];
@@ -252,14 +332,15 @@ ZegoRoomStreamUpdate _parseRoomStreamUpdate(JSAny? raw) {
     );
   }
   return ZegoRoomStreamUpdate(
-    roomId: _readString(o, 'roomID') ?? '',
-    type: _parseUpdateTypeEnum(_readString(o, 'updateType')),
+    roomId: roomId,
+    type: updateType,
     streams: streams,
   );
 }
 
-ZegoPublisherStateChanged _parsePublisherStateChanged(JSAny? raw) {
-  final o = raw as JSObject;
+/// Parses `publisherStateUpdate(result)` — single object arg.
+ZegoPublisherStateChanged _parsePublisherStateChanged(List<JSAny?> args) {
+  final o = _argObject(args, 0) ?? JSObject();
   return ZegoPublisherStateChanged(
     streamId: _readString(o, 'streamID') ?? '',
     state: _readString(o, 'state') ?? '',
@@ -268,8 +349,9 @@ ZegoPublisherStateChanged _parsePublisherStateChanged(JSAny? raw) {
   );
 }
 
-ZegoPlayerStateChanged _parsePlayerStateChanged(JSAny? raw) {
-  final o = raw as JSObject;
+/// Parses `playerStateUpdate(result)` — single object arg.
+ZegoPlayerStateChanged _parsePlayerStateChanged(List<JSAny?> args) {
+  final o = _argObject(args, 0) ?? JSObject();
   return ZegoPlayerStateChanged(
     streamId: _readString(o, 'streamID') ?? '',
     state: _readString(o, 'state') ?? '',
@@ -278,11 +360,13 @@ ZegoPlayerStateChanged _parsePlayerStateChanged(JSAny? raw) {
   );
 }
 
-ZegoTokenWillExpire _parseTokenWillExpire(JSAny? raw) {
-  final o = raw as JSObject;
+/// Parses `tokenWillExpire(roomID)` — single string arg. The SDK does not
+/// report remainingSeconds on the 3.12 callback; we default to 30 which is
+/// the documented trigger threshold.
+ZegoTokenWillExpire _parseTokenWillExpire(List<JSAny?> args) {
   return ZegoTokenWillExpire(
-    roomId: _readString(o, 'roomID') ?? '',
-    remainingSeconds: _readInt(o, 'remainTimeInSecond') ?? 0,
+    roomId: _argString(args, 0) ?? '',
+    remainingSeconds: 30,
   );
 }
 

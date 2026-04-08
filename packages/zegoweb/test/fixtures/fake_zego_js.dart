@@ -100,11 +100,29 @@ class FakeZegoJs {
   // Low-level driving API
   // ---------------------------------------------------------------------------
 
+  /// Fire an event with a single JS payload (legacy 1-arg form — still used
+  /// by the smoke test and by emit helpers that wrap object-shaped events
+  /// like publisherStateUpdate / playerStateUpdate).
   void driveEvent(String name, JSAny? payload) {
     final list = _listeners[name];
     if (list == null) return;
     for (final cb in List<JSFunction>.of(list)) {
       cb.callAsFunction(null, payload);
+    }
+  }
+
+  /// Fire an event with up to 4 positional arguments matching the real
+  /// SDK's multi-arg callback shape
+  /// (e.g. roomStateUpdate(roomID, state, errorCode, extendedData)).
+  void driveEventArgs(String name, List<JSAny?> args) {
+    final list = _listeners[name];
+    if (list == null) return;
+    final a0 = args.isNotEmpty ? args[0] : null;
+    final a1 = args.length > 1 ? args[1] : null;
+    final a2 = args.length > 2 ? args[2] : null;
+    final a3 = args.length > 3 ? args[3] : null;
+    for (final cb in List<JSFunction>.of(list)) {
+      cb.callAsFunction(null, a0, a1, a2, a3);
     }
   }
 
@@ -152,23 +170,25 @@ class FakeZegoJs {
   // High-level event emitters
   // ---------------------------------------------------------------------------
 
+  /// Fires `roomStateUpdate(roomID, state, errorCode, extendedData)` — the
+  /// real SDK uses 4 positional args, NOT a single object.
+  /// `errorCode` and `extendedData` are forwarded as null when omitted so
+  /// tests can assert distinct "absent" vs "0/empty" cases.
   void emitRoomStateUpdate(
     String roomId,
     String state, {
     int? errorCode,
     String? extendedData,
   }) {
-    driveEvent(
-      'roomStateUpdate',
-      <String, Object?>{
-        'roomID': roomId,
-        'state': state,
-        if (errorCode != null) 'errorCode': errorCode,
-        if (extendedData != null) 'extendedData': extendedData,
-      }.jsify(),
-    );
+    driveEventArgs('roomStateUpdate', <JSAny?>[
+      roomId.toJS,
+      state.toJS,
+      errorCode?.toJS,
+      extendedData?.toJS,
+    ]);
   }
 
+  /// Fires `publisherStateUpdate(result)` — single object arg.
   void emitPublisherStateUpdate(
     String streamId,
     String state,
@@ -186,6 +206,7 @@ class FakeZegoJs {
     );
   }
 
+  /// Fires `playerStateUpdate(result)` — single object arg.
   void emitPlayerStateUpdate(
     String streamId,
     String state,
@@ -203,7 +224,8 @@ class FakeZegoJs {
     );
   }
 
-  /// Each tuple is `(streamId, userId, userName)`.
+  /// Fires `roomStreamUpdate(roomID, updateType, streamList, extendedData)` —
+  /// 4 positional args. Each stream tuple is `(streamId, userId, userName)`.
   void emitRoomStreamUpdate(
     String roomId,
     Object updateType, // ZegoUpdateType.add / delete — kept loose
@@ -217,24 +239,19 @@ class FakeZegoJs {
           },
         )
         .toList();
-    driveEvent(
-      'roomStreamUpdate',
-      <String, Object?>{
-        'roomID': roomId,
-        'updateType': updateType.toString().split('.').last,
-        'streamList': streamsJs,
-      }.jsify(),
-    );
+    driveEventArgs('roomStreamUpdate', <JSAny?>[
+      roomId.toJS,
+      updateType.toString().split('.').last.toJS,
+      streamsJs.jsify(),
+      ''.toJS,
+    ]);
   }
 
+  /// Fires `tokenWillExpire(roomID)` — single string arg in the 3.12 SDK.
+  /// `remainingSeconds` is retained for test convenience but the real SDK
+  /// does not pass it.
   void emitTokenWillExpire(String roomId, int remainingSeconds) {
-    driveEvent(
-      'tokenWillExpire',
-      <String, Object?>{
-        'roomID': roomId,
-        'remainTimeInSecond': remainingSeconds,
-      }.jsify(),
-    );
+    driveEventArgs('tokenWillExpire', <JSAny?>[roomId.toJS]);
   }
 
   // ---------------------------------------------------------------------------

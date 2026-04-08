@@ -72,21 +72,26 @@ abstract final class ZegoWeb {
 
     final jsEngine = ZegoExpressEngineJs(config.appId, config.server);
 
-    // Forward the Dart log level and the scenario to the JS engine.
+    // Forward the Dart log level to the JS engine.
     try {
       configureJsLogging(jsEngine, ZegoLog.level);
     } catch (e) {
       ZegoLog.warn('configureJsLogging failed: $e');
     }
-    try {
-      jsEngine.setRoomScenario(_scenarioToInt(config.scenario));
-    } catch (e) {
-      ZegoLog.warn('setRoomScenario failed: $e');
-    }
+
+    // `setRoomScenario` is intentionally NOT called against the real 3.12
+    // SDK: it rejects the legacy integer scenario values (0/1/2) with
+    // "please use valid scenario", logging a noisy error on every create.
+    // The scenario is an optimisation hint only — the engine works fine
+    // with its default. A future revision should expose a string-based
+    // scenario matching the 3.x enum (e.g. 'StandardVoiceCall',
+    // 'HighQualityChatroom') and forward it, but that requires a public
+    // API change. For now `config.scenario` is captured and logged but
+    // not propagated to JS.
 
     ZegoLog.info(
       'createEngine appId=${config.appId} server=${config.server} '
-      'scenario=${config.scenario.name}',
+      'scenario=${config.scenario.name} (not forwarded to JS in 3.12)',
     );
 
     final bridge = EventBridge(jsEngine);
@@ -97,20 +102,5 @@ abstract final class ZegoWeb {
       eventBridge: bridge,
       tokenManager: tokenManager,
     );
-  }
-
-  /// Map the Dart enum to the integer scenario the JS SDK expects.
-  ///
-  /// Values match the `zego-express-engine-webrtc` 3.x scenario constants:
-  ///   0 = General, 1 = Communication, 2 = LiveBroadcast (a.k.a. Live).
-  static int _scenarioToInt(ZegoScenario scenario) {
-    switch (scenario) {
-      case ZegoScenario.general:
-        return 0;
-      case ZegoScenario.communication:
-        return 1;
-      case ZegoScenario.live:
-        return 2;
-    }
   }
 }

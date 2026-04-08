@@ -41,18 +41,17 @@ void main() {
     final engine = fake.asJs();
 
     // 4. EventBridge delivers fake-driven events as Dart stream events.
+    //    The real SDK's roomStateUpdate fires 4 positional args; here we
+    //    only care about arg[1] (state).
     final bridge = EventBridge(engine);
     final stream = bridge.registerEvent<String>(
       'roomStateUpdate',
-      (raw) => ((raw as JSObject)['state'] as JSString).toDart,
+      (args) => (args[1]! as JSString).toDart,
     );
     final received = <String>[];
     final sub = stream.listen(received.add);
 
-    fake.driveEvent(
-      'roomStateUpdate',
-      <String, Object?>{'state': 'CONNECTED'}.jsify(),
-    );
+    fake.emitRoomStateUpdate('room-1', 'CONNECTED');
     await Future<void>.delayed(Duration.zero);
     expect(received, <String>['CONNECTED']);
 
