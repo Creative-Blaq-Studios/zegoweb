@@ -5,6 +5,7 @@ import 'dart:js_interop';
 import 'package:meta/meta.dart';
 
 import 'interop/event_bridge.dart';
+import 'interop/promise_adapter.dart';
 import 'interop/zego_js.dart';
 import 'log.dart';
 import 'models/zego_config.dart';
@@ -87,15 +88,60 @@ class ZegoEngine with StateGuard {
   Stream<ZegoRoomStreamUpdate> get onRoomStreamUpdate =>
       _streamUpdateController.stream;
 
-  // Tasks 25-30 add room/stream methods onto these stubs.
   Future<void> loginRoom(String roomId, ZegoUser user) async {
     requireAlive();
-    throw UnimplementedError('loginRoom — added in Task 25');
+    ZegoLog.info('ZegoEngine.loginRoom room=$roomId user=${user.userId}');
+    final token = await _tokenManager.initialToken();
+    final jsUser = ZegoUserJs(userID: user.userId, userName: user.userName);
+    try {
+      await futureFromJsPromise<void>(
+        _js.loginRoom(roomId, token, jsUser, null),
+      );
+    } on ZegoError {
+      rethrow;
+    } catch (e, st) {
+      throw ZegoError(-1, 'loginRoom failed: $e', cause: e, stackTrace: st);
+    }
+    _currentUser = user;
+    setCurrentRoom(roomId);
   }
 
   Future<void> logoutRoom([String? roomId]) async {
     requireAlive();
-    throw UnimplementedError('logoutRoom — added in Task 25');
+    final current = currentRoomId;
+    if (current == null) {
+      ZegoLog.info('ZegoEngine.logoutRoom: no active room; ignoring');
+      return;
+    }
+    final targetRoom = roomId ?? current;
+    ZegoLog.info('ZegoEngine.logoutRoom room=$targetRoom');
+
+    // Auto-stop any publishing / playing streams.
+    for (final id in List<String>.from(_locals.keys)) {
+      try {
+        await futureFromJsPromise<void>(_js.stopPublishingStream(id));
+      } catch (e) {
+        ZegoLog.warn('stopPublishingStream($id) during logout: $e');
+      }
+    }
+    _locals.clear();
+    for (final id in List<String>.from(_remotes.keys)) {
+      try {
+        await futureFromJsPromise<void>(_js.stopPlayingStream(id));
+      } catch (e) {
+        ZegoLog.warn('stopPlayingStream($id) during logout: $e');
+      }
+    }
+    _remotes.clear();
+
+    try {
+      await futureFromJsPromise<void>(_js.logoutRoom(targetRoom));
+    } catch (e, st) {
+      throw ZegoError(-1, 'logoutRoom failed: $e', cause: e, stackTrace: st);
+    } finally {
+      clearCurrentRoom();
+      _currentUser = null;
+    }
   }
 
   Future<ZegoLocalStream> createLocalStream({ZegoStreamConfig? config}) async {
@@ -162,7 +208,27 @@ class ZegoEngine with StateGuard {
   }
 
   void _wireEventStreams() {
-    // Tasks 25/27/28 add subscriptions here.
+    _bridgeSubs.add(
+      _eventBridge.onRoomStateUpdate.listen((event) {
+        _roomStateController.add(event.state);
+        if (event.state == ZegoRoomState.disconnected &&
+            event.errorCode != null &&
+            event.errorCode != 0) {
+          _errorController.add(
+            ZegoNetworkException(
+              event.errorCode!,
+              event.extendedData ?? 'room disconnected',
+            ),
+          );
+        }
+      }),
+    );
+    _bridgeSubs.add(
+      _eventBridge.onRoomUserUpdate.listen(_userUpdateController.add),
+    );
+    _bridgeSubs.add(
+      _eventBridge.onRoomStreamUpdate.listen(_streamUpdateController.add),
+    );
   }
 
   /// Tears down all subscriptions and closes controllers. Safe to call
