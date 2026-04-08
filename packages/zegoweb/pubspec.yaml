@@ -19,12 +19,16 @@ dependencies:
     sdk: flutter
   web: ^1.0.0
   meta: ^1.10.0
+  # pointycastle is a pure-Dart crypto package used by the local-development
+  # token generator at lib/src/internal/token_generator.dart. It compiles on
+  # both VM and web. Production callers will replace the local generator with
+  # a server-minted token via tokenProvider, so this dep is small and stable.
+  pointycastle: ^3.9.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  pointycastle: ^3.9.1
   args: ^2.5.0
 
 flutter:

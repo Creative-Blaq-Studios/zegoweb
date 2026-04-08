@@ -62,6 +62,7 @@ class ZegoEngine with StateGuard {
   final EventBridge _eventBridge;
   final TokenManager _tokenManager;
 
+  // ignore: unused_field
   ZegoUser? _currentUser;
   final Map<String, ZegoLocalStream> _locals = <String, ZegoLocalStream>{};
   final Map<String, ZegoRemoteStream> _remotes = <String, ZegoRemoteStream>{};

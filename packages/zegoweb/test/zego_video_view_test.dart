@@ -2,6 +2,10 @@
 @TestOn('chrome')
 library;
 
+// Object() in the negative-path test prevents some const constructions, and
+// SizedBox with non-const children chains the lint upward.
+// ignore_for_file: prefer_const_constructors
+
 import 'dart:js_interop';
 
 import 'package:flutter/widgets.dart';

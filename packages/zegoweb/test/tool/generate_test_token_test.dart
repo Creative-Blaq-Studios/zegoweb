@@ -1,12 +1,15 @@
 // packages/zegoweb/test/tool/generate_test_token_test.dart
+//
+// VM-only: the token generator uses ByteData.setInt64 which dart2js does not
+// support (JS numbers don't have native 64-bit integers). The token generator
+// itself is intended to run from a CLI shell, never in the browser.
 @TestOn('vm')
 library;
 
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-
-import '../../tool/generate_test_token.dart' as gen;
+import 'package:zegoweb/src/internal/token_generator.dart' as gen;
 
 void main() {
   group('generateToken04', () {
