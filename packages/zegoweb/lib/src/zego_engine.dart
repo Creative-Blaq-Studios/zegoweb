@@ -524,13 +524,54 @@ class ZegoEngine with StateGuard {
     );
   }
 
-  /// Tears down all subscriptions and closes controllers. Safe to call
-  /// multiple times.
+  /// Tears down all subscriptions and closes controllers, AND tells the JS
+  /// SDK to stop publishing, leave the room, and destroy its engine. Safe
+  /// to call multiple times.
+  ///
+  /// The JS-side teardown is critical for peer notification: without it,
+  /// the ZEGO server keeps the publisher alive and remote viewers continue
+  /// to see the stream until the page unloads (or a server-side timeout
+  /// fires several minutes later). Each JS call is wrapped in try/catch
+  /// because destroy() must be idempotent and never throw.
   Future<void> destroy() async {
     if (isDisposed) return;
+    // Capture the active room id BEFORE markDisposed() clears it.
+    final roomToLeave = currentRoomId;
+    final localStreamIds = List<String>.from(_locals.keys);
+    final remoteStreamIds = List<String>.from(_remotes.keys);
+
     markDisposed();
     ZegoLog.info('ZegoEngine.destroy');
 
+    // -- JS-side teardown (best-effort) ---------------------------------
+    for (final id in localStreamIds) {
+      try {
+        _js.stopPublishingStream(id);
+      } catch (e) {
+        ZegoLog.warn('stopPublishingStream($id) during destroy: $e');
+      }
+    }
+    for (final id in remoteStreamIds) {
+      try {
+        _js.stopPlayingStream(id);
+      } catch (e) {
+        ZegoLog.warn('stopPlayingStream($id) during destroy: $e');
+      }
+    }
+    if (roomToLeave != null) {
+      try {
+        _js.logoutRoom(roomToLeave);
+      } catch (e) {
+        ZegoLog.warn('logoutRoom($roomToLeave) during destroy: $e');
+      }
+    }
+    try {
+      _js.destroyEngine();
+    } catch (e) {
+      ZegoLog.warn('destroyEngine during destroy: $e');
+    }
+
+    // -- Dart-side teardown ---------------------------------------------
     for (final sub in _bridgeSubs) {
       await sub.cancel();
     }

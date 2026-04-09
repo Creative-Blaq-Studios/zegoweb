@@ -123,23 +123,34 @@ abstract final class SdkLoader {
     _loadScriptFuture = completer.future;
 
     final esmUrl = _esmTemplate.replaceFirst('%VERSION%', version ?? 'latest');
-    // The esm.sh default export for zego-express-engine-webrtc is the SDK's
-    // namespace object, not the class — the class constructor is at
-    // `.ZegoExpressEngine` on that namespace. Assign it explicitly so
-    // `new ZegoExpressEngine(...)` on the Dart side hits the real ctor.
-    // We also surface any import failure onto our custom ready event so
-    // SdkLoader.loadScript can reject cleanly rather than hanging.
+    // The esm.sh default export for zego-express-engine-webrtc is a
+    // namespace object, not the class constructor itself. The real
+    // constructor lives at `.ZegoExpressEngine` on that namespace. We
+    // walk three possible paths (ns.ZegoExpressEngine → ns.default →
+    // ns itself) and verify typeof before assigning to
+    // `window.ZegoExpressEngine`, which is where the Dart-side
+    // @JS('ZegoExpressEngine') extern looks for it. Any import failure
+    // is surfaced via `window.__zegowebLoadError` and caught by the
+    // ready-event handler below, so developers get a descriptive error
+    // instead of a downstream constructor crash.
     final tag = web.HTMLScriptElement()
       ..type = 'module'
       ..text = '''
 try {
   const mod = await import('$esmUrl');
   const ns = mod.default ?? mod;
-  const ctor = ns.ZegoExpressEngine ?? ns.default ?? ns;
+  let ctor = ns.ZegoExpressEngine ?? ns.default ?? ns;
+  if (typeof ctor !== 'function' && ctor && typeof ctor === 'object') {
+    if (typeof ctor.ZegoExpressEngine === 'function') {
+      ctor = ctor.ZegoExpressEngine;
+    } else if (typeof ctor.default === 'function') {
+      ctor = ctor.default;
+    }
+  }
   if (typeof ctor !== 'function') {
     throw new Error('esm.sh returned '
       + (typeof ctor) + ', expected a constructor function. '
-      + 'Keys on namespace: ' + Object.keys(ns).slice(0, 20).join(', '));
+      + 'Top keys: ' + Object.keys(ns).slice(0, 30).join(', '));
   }
   window.ZegoExpressEngine = ctor;
   window.dispatchEvent(new Event('zegoweb-sdk-ready'));
