@@ -51,7 +51,8 @@ extension type ZegoExpressEngineJs._(JSObject _) implements JSObject {
 
   // -- Room lifecycle -------------------------------------------------------
 
-  /// `loginRoom(roomId, token, user, config?)` — resolves on success.
+  /// `loginRoom(roomId, token, user, config?)` → `Promise<boolean>`.
+  /// Async — resolves to `true` on success.
   external JSPromise<JSAny?> loginRoom(
     String roomId,
     String token,
@@ -59,32 +60,38 @@ extension type ZegoExpressEngineJs._(JSObject _) implements JSObject {
     JSObject? config,
   ]);
 
-  /// `logoutRoom(roomId?)` — resolves on success.
-  external JSPromise<JSAny?> logoutRoom([String? roomId]);
+  /// `logoutRoom(roomId?)` → `void`. SYNCHRONOUS in 3.12.
+  external void logoutRoom([String? roomId]);
 
   // -- Local stream ---------------------------------------------------------
 
-  /// `createStream(config?)` → Promise<MediaStream-like object>.
-  /// The resolved value is a JS object with a `.streamID` property.
+  /// `createStream(config?)` → `Promise<MediaStream>`. Async.
   external JSPromise<JSAny?> createStream([JSObject? config]);
 
-  external JSPromise<JSAny?> startPublishingStream(
+  /// `startPublishingStream(streamID, mediaStream, options?)` → `boolean`.
+  /// SYNCHRONOUS in 3.12 — returns true/false synchronously, NOT a Promise.
+  /// Declared as `void` here because the return value is not consumed.
+  /// Awaiting this through the promise adapter fails with
+  /// "TypeError: true: type 'bool' is not a subtype of type 'JSObject'".
+  external void startPublishingStream(
     String streamId,
     JSObject mediaStream, [
     JSObject? config,
   ]);
 
-  external JSPromise<JSAny?> stopPublishingStream(String streamId);
+  /// `stopPublishingStream(streamID)` → `boolean`. SYNCHRONOUS.
+  external void stopPublishingStream(String streamId);
 
   // -- Remote playback ------------------------------------------------------
 
-  /// `startPlayingStream(streamId, config?)` → Promise<MediaStream-like object>.
+  /// `startPlayingStream(streamId, config?)` → `Promise<MediaStream>`. Async.
   external JSPromise<JSAny?> startPlayingStream(
     String streamId, [
     JSObject? config,
   ]);
 
-  external JSPromise<JSAny?> stopPlayingStream(String streamId);
+  /// `stopPlayingStream(streamID)` → `void`. SYNCHRONOUS in 3.12.
+  external void stopPlayingStream(String streamId);
 
   // -- Device enumeration ---------------------------------------------------
 
@@ -94,10 +101,13 @@ extension type ZegoExpressEngineJs._(JSObject _) implements JSObject {
   /// Resolves with `JSArray<ZegoDeviceInfoJs>`.
   external JSPromise<JSArray<JSObject>> getMicrophones();
 
+  /// `useVideoDevice(mediaStream, deviceID)` → `Promise<ZegoServerResponse>`. Async.
   external JSPromise<JSAny?> useVideoDevice(
     JSObject mediaStream,
     String deviceId,
   );
+
+  /// `useAudioDevice(mediaStream, deviceID)` → `Promise<ZegoServerResponse>`. Async.
   external JSPromise<JSAny?> useAudioDevice(
     JSObject mediaStream,
     String deviceId,
@@ -105,40 +115,34 @@ extension type ZegoExpressEngineJs._(JSObject _) implements JSObject {
 
   // -- Device toggles -------------------------------------------------------
 
-  external JSPromise<JSAny?> mutePublishStreamAudio(
-    JSObject mediaStream,
-    bool mute,
-  );
-  external JSPromise<JSAny?> mutePublishStreamVideo(
+  /// `mutePublishStreamAudio(mediaStream, mute)` → `boolean`. SYNCHRONOUS.
+  external void mutePublishStreamAudio(
     JSObject mediaStream,
     bool mute,
   );
 
-  /// Enable or disable the video capture device on the given local stream.
-  /// Mirrors `enableVideoCaptureDevice(mediaStream, enable)` in Express 3.x.
+  /// `mutePublishStreamVideo(mediaStream, mute, retain?)` → `boolean`. SYNCHRONOUS.
+  external void mutePublishStreamVideo(
+    JSObject mediaStream,
+    bool mute,
+  );
+
+  /// `enableVideoCaptureDevice(mediaStream, enable)` → `Promise<boolean>`.
+  /// One of the few device toggle methods that IS async.
   external JSPromise<JSAny?> enableVideoCaptureDevice(
     JSObject mediaStream,
     bool enable,
   );
 
-  // -- Scenario -------------------------------------------------------------
-
-  /// `setRoomScenario(scenario)` — forwards the Dart-side enum (mapped to the
-  /// SDK's integer scenario) to the JS engine. Called from `ZegoWeb.createEngine`.
-  external void setRoomScenario(int scenario);
-
   // -- Token refresh --------------------------------------------------------
 
-  /// `renewToken(token, [roomID])`. The `roomID` overload is used from
-  /// `ZegoEngine` when a room is active.
-  external JSPromise<JSAny?> renewToken(String token, [String? roomID]);
+  /// `renewToken(token, [roomID])` → `boolean`. SYNCHRONOUS in 3.12.
+  external void renewToken(String token, [String? roomID]);
 
   // -- Engine teardown ------------------------------------------------------
 
-  /// Static on the JS side: `ZegoExpressEngine.destroyEngine(instance)`.
-  /// Exposed here as an instance helper for callers that already hold the
-  /// instance.
-  external JSPromise<JSAny?> destroyEngine();
+  /// `destroyEngine()` → `void`. SYNCHRONOUS in 3.12.
+  external void destroyEngine();
 
   // -- Logging --------------------------------------------------------------
 

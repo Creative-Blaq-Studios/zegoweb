@@ -110,7 +110,11 @@ class ZegoEngine with StateGuard {
     setCurrentRoom(roomId);
     _tokenManager.wireRefresh(
       _eventBridge,
-      (room, tk) => futureFromJsPromise<void>(_js.renewToken(tk, room)),
+      // renewToken is sync in 3.12; wrap in a completed Future so the
+      // RenewFn signature stays Future-returning.
+      (room, tk) async {
+        _js.renewToken(tk, room);
+      },
       _errorController,
     );
   }
@@ -125,10 +129,11 @@ class ZegoEngine with StateGuard {
     final targetRoom = roomId ?? current;
     ZegoLog.info('ZegoEngine.logoutRoom room=$targetRoom');
 
-    // Auto-stop any publishing / playing streams.
+    // Auto-stop any publishing / playing streams. All three of these SDK
+    // methods are synchronous in 3.12 — no await needed.
     for (final id in List<String>.from(_locals.keys)) {
       try {
-        await futureFromJsPromise<void>(_js.stopPublishingStream(id));
+        _js.stopPublishingStream(id);
       } catch (e) {
         ZegoLog.warn('stopPublishingStream($id) during logout: $e');
       }
@@ -136,7 +141,7 @@ class ZegoEngine with StateGuard {
     _locals.clear();
     for (final id in List<String>.from(_remotes.keys)) {
       try {
-        await futureFromJsPromise<void>(_js.stopPlayingStream(id));
+        _js.stopPlayingStream(id);
       } catch (e) {
         ZegoLog.warn('stopPlayingStream($id) during logout: $e');
       }
@@ -144,7 +149,7 @@ class ZegoEngine with StateGuard {
     _remotes.clear();
 
     try {
-      await futureFromJsPromise<void>(_js.logoutRoom(targetRoom));
+      _js.logoutRoom(targetRoom);
     } catch (e, st) {
       throw ZegoError(-1, 'logoutRoom failed: $e', cause: e, stackTrace: st);
     } finally {
@@ -243,10 +248,10 @@ class ZegoEngine with StateGuard {
     requireAlive();
     requireRoom();
     ZegoLog.info('ZegoEngine.startPublishing streamId=$streamId');
+    // startPublishingStream is SYNCHRONOUS in 3.12 — returns a boolean
+    // synchronously, not a Promise. Do not await.
     try {
-      await futureFromJsPromise<void>(
-        _js.startPublishingStream(streamId, stream.jsStream),
-      );
+      _js.startPublishingStream(streamId, stream.jsStream);
     } catch (e, st) {
       throw ZegoError(
         -1,
@@ -261,7 +266,7 @@ class ZegoEngine with StateGuard {
     requireAlive();
     ZegoLog.info('ZegoEngine.stopPublishing streamId=$streamId');
     try {
-      await futureFromJsPromise<void>(_js.stopPublishingStream(streamId));
+      _js.stopPublishingStream(streamId);
     } catch (e, st) {
       throw ZegoError(
         -1,
@@ -299,7 +304,7 @@ class ZegoEngine with StateGuard {
     requireAlive();
     ZegoLog.info('ZegoEngine.stopPlaying streamId=$streamId');
     try {
-      await futureFromJsPromise<void>(_js.stopPlayingStream(streamId));
+      _js.stopPlayingStream(streamId);
     } catch (e, st) {
       throw ZegoError(
         -1,
@@ -374,9 +379,8 @@ class ZegoEngine with StateGuard {
   Future<void> muteMicrophone(bool mute) async {
     requireAlive();
     final local = _requireLocalStream('muteMicrophone');
-    await futureFromJsPromise<void>(
-      _js.mutePublishStreamAudio(local.jsStream, mute),
-    );
+    // mutePublishStreamAudio is SYNCHRONOUS in 3.12 — returns bool, no Promise.
+    _js.mutePublishStreamAudio(local.jsStream, mute);
   }
 
   Future<void> enableCamera(bool enable) async {

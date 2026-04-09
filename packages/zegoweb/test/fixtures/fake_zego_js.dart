@@ -291,15 +291,14 @@ class FakeZegoJs {
     obj['off'] =
         ((JSString name, JSFunction cb) => _off(name.toDart, cb)).toJS;
 
-    // Synchronous methods
+    // Synchronous methods — these must return a Dart value directly
+    // (bool / null), NOT a JSPromise wrapper, to match the real 3.12 SDK.
+
     obj['setLogConfig'] = ((JSObject cfg) {
       _record('setLogConfig', <Object?>[cfg]);
     }).toJS;
-    obj['setRoomScenario'] = ((JSNumber scenario) {
-      _record('setRoomScenario', <Object?>[scenario.toDartInt]);
-    }).toJS;
 
-    // loginRoom(roomId, token, user, [config])
+    // loginRoom(roomId, token, user, [config]) — ASYNC, returns Promise<boolean>.
     obj['loginRoom'] = ((
       JSString roomId,
       JSString token,
@@ -322,13 +321,13 @@ class FakeZegoJs {
       );
     }).toJS;
 
-    // logoutRoom([roomId])
+    // logoutRoom([roomId]) — SYNC void.
     obj['logoutRoom'] = (([JSString? roomId]) {
       if (roomId != null) logoutCalls.add(roomId.toDart);
-      return _runMethod('logoutRoom', <JSAny?>[roomId]);
+      _record('logoutRoom', <JSAny?>[roomId]);
     }).toJS;
 
-    // createStream([config])
+    // createStream([config]) — ASYNC, returns Promise<MediaStream>.
     obj['createStream'] = (([JSAny? config]) {
       _record('createStream', <Object?>[config]);
       final queue = _queued['createStream'];
@@ -345,26 +344,28 @@ class FakeZegoJs {
       }).toJS);
     }).toJS;
 
-    // startPublishingStream(streamId, mediaStream, [config])
+    // startPublishingStream(streamId, mediaStream, [config]) — SYNC, returns bool.
     obj['startPublishingStream'] = ((
       JSString streamId,
       JSObject mediaStream, [
       JSAny? config,
     ]) {
       publishCalls.add(FakePublishCall(streamId: streamId.toDart));
-      return _runMethod(
+      _record(
         'startPublishingStream',
         <JSAny?>[streamId, mediaStream, config],
       );
+      return true.toJS;
     }).toJS;
 
-    // stopPublishingStream(streamId)
+    // stopPublishingStream(streamId) — SYNC, returns bool.
     obj['stopPublishingStream'] = ((JSString streamId) {
       stopPublishCalls.add(streamId.toDart);
-      return _runMethod('stopPublishingStream', <JSAny?>[streamId]);
+      _record('stopPublishingStream', <JSAny?>[streamId]);
+      return true.toJS;
     }).toJS;
 
-    // startPlayingStream(streamId, [config])
+    // startPlayingStream(streamId, [config]) — ASYNC, returns Promise<MediaStream>.
     obj['startPlayingStream'] = ((JSString streamId, [JSAny? config]) {
       _record('startPlayingStream', <Object?>[streamId, config]);
       return JSPromise<JSAny?>(((JSFunction resolve, JSFunction reject) {
@@ -374,13 +375,13 @@ class FakeZegoJs {
       }).toJS);
     }).toJS;
 
-    // stopPlayingStream(streamId)
+    // stopPlayingStream(streamId) — SYNC void.
     obj['stopPlayingStream'] = ((JSString streamId) {
       stopPlayCalls.add(streamId.toDart);
-      return _runMethod('stopPlayingStream', <JSAny?>[streamId]);
+      _record('stopPlayingStream', <JSAny?>[streamId]);
     }).toJS;
 
-    // getCameras() / getMicrophones()
+    // getCameras() / getMicrophones() — ASYNC.
     obj['getCameras'] = (() {
       return _resolveSync(_toDeviceArray(cameras));
     }).toJS;
@@ -388,36 +389,36 @@ class FakeZegoJs {
       return _resolveSync(_toDeviceArray(microphones));
     }).toJS;
 
-    // useVideoDevice(mediaStream, deviceId)
+    // useVideoDevice(mediaStream, deviceId) — ASYNC.
     obj['useVideoDevice'] = ((JSObject _, JSString deviceId) {
       usedCamera = deviceId.toDart;
       return _resolveSync(null);
     }).toJS;
 
-    // useAudioDevice(mediaStream, deviceId)
+    // useAudioDevice(mediaStream, deviceId) — ASYNC.
     obj['useAudioDevice'] = ((JSObject _, JSString deviceId) {
       usedMic = deviceId.toDart;
       return _resolveSync(null);
     }).toJS;
 
-    // mutePublishStreamAudio(mediaStream, mute)
+    // mutePublishStreamAudio(mediaStream, mute) — SYNC, returns bool.
     obj['mutePublishStreamAudio'] = ((JSObject _, JSBoolean mute) {
       lastMuteMic = mute.toDart;
-      return _resolveSync(null);
+      return true.toJS;
     }).toJS;
 
-    // mutePublishStreamVideo(mediaStream, mute)
+    // mutePublishStreamVideo(mediaStream, mute) — SYNC, returns bool.
     obj['mutePublishStreamVideo'] = ((JSObject _, JSBoolean mute) {
-      return _resolveSync(null);
+      return true.toJS;
     }).toJS;
 
-    // enableVideoCaptureDevice(mediaStream, enable)
+    // enableVideoCaptureDevice(mediaStream, enable) — ASYNC (Promise<bool>).
     obj['enableVideoCaptureDevice'] = ((JSObject _, JSBoolean enable) {
       lastEnableCam = enable.toDart;
       return _resolveSync(null);
     }).toJS;
 
-    // renewToken(token, [roomID])
+    // renewToken(token, [roomID]) — SYNC, returns bool.
     obj['renewToken'] = ((JSString token, [JSString? roomId]) {
       renewTokenCalls.add(
         FakeRenewCall(
@@ -425,12 +426,13 @@ class FakeZegoJs {
           roomId: roomId?.toDart ?? '',
         ),
       );
-      return _runMethod('renewToken', <JSAny?>[token, roomId]);
+      _record('renewToken', <JSAny?>[token, roomId]);
+      return true.toJS;
     }).toJS;
 
-    // destroyEngine()
+    // destroyEngine() — SYNC void.
     obj['destroyEngine'] = (() {
-      return _runMethod('destroyEngine', <JSAny?>[]);
+      _record('destroyEngine', <JSAny?>[]);
     }).toJS;
 
     return obj;
