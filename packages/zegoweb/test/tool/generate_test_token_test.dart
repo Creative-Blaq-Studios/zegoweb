@@ -14,8 +14,7 @@ import 'package:zegoweb/src/internal/token_generator.dart' as gen;
 
 void main() {
   group('generateToken04', () {
-    test('is prefixed with the literal "04" version tag (outside base64)',
-        () {
+    test('is prefixed with the literal "04" version tag (outside base64)', () {
       // 32-byte ASCII secret — first 16 bytes are used as the AES key.
       const secret = '0123456789abcdef0123456789abcdef';
       final token = gen.generateToken04(

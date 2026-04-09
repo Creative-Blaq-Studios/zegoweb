@@ -166,7 +166,8 @@ extension type ZegoExpressEngineJs._(JSObject _) implements JSObject {
 
 /// User dict consumed by `loginRoom(user, ...)`. JS shape: `{ userID, userName }`.
 extension type ZegoUserJs._(JSObject _) implements JSObject {
-  external factory ZegoUserJs({required String userID, required String userName});
+  external factory ZegoUserJs(
+      {required String userID, required String userName});
   external String get userID;
   external String get userName;
 }

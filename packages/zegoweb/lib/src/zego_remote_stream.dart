@@ -22,8 +22,7 @@ class ZegoRemoteStream {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is ZegoRemoteStream && other._id == _id);
+      identical(this, other) || (other is ZegoRemoteStream && other._id == _id);
 
   @override
   int get hashCode => _id.hashCode;

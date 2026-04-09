@@ -21,8 +21,7 @@ void main() {
       engine = fake.asJs();
     });
 
-    test('maps ZegoLogLevel.verbose → "debug" and disables remote logging',
-        () {
+    test('maps ZegoLogLevel.verbose → "debug" and disables remote logging', () {
       configureJsLogging(engine, ZegoLogLevel.verbose);
       final call = fake.callArgs['setLogConfig']!.single;
       final cfg = call.single as JSObject;

@@ -52,9 +52,7 @@ String generateToken04({
   int effectiveTimeInSeconds = 86400,
 }) {
   final keyBytes = Uint8List.fromList(utf8.encode(serverSecret));
-  if (keyBytes.length != 16 &&
-      keyBytes.length != 24 &&
-      keyBytes.length != 32) {
+  if (keyBytes.length != 16 && keyBytes.length != 24 && keyBytes.length != 32) {
     throw ArgumentError.value(
       serverSecret,
       'serverSecret',

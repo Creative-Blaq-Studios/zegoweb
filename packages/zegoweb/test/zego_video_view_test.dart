@@ -17,8 +17,7 @@ import 'package:zegoweb/src/zego_video_view.dart';
 
 void main() {
   group('ZegoVideoView', () {
-    testWidgets('mounts an HtmlElementView for a local stream',
-        (tester) async {
+    testWidgets('mounts an HtmlElementView for a local stream', (tester) async {
       final local = ZegoLocalStreamTestAccess.create('v-1', JSObject());
       await tester.pumpWidget(
         Directionality(

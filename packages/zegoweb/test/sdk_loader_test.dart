@@ -107,8 +107,7 @@ void main() {
       expect(count, 1);
     });
 
-    test('ready times out with ZegoStateError when SDK never loads',
-        () async {
+    test('ready times out with ZegoStateError when SDK never loads', () async {
       await expectLater(
         SdkLoader.readyWithTimeout(const Duration(milliseconds: 50)),
         throwsA(

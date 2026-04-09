@@ -51,10 +51,12 @@ void main() {
       fake.emitRoomStateUpdate('room-1', 'CONNECTING');
       fake.emitRoomStateUpdate('room-1', 'CONNECTED');
       await Future<void>.delayed(Duration.zero);
-      expect(states, containsAllInOrder(<ZegoRoomState>[
-        ZegoRoomState.connecting,
-        ZegoRoomState.connected,
-      ]));
+      expect(
+          states,
+          containsAllInOrder(<ZegoRoomState>[
+            ZegoRoomState.connecting,
+            ZegoRoomState.connected,
+          ]));
       await sub.cancel();
     });
 

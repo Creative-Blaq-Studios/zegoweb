@@ -22,8 +22,7 @@ class ZegoLocalStream {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is ZegoLocalStream && other._id == _id);
+      identical(this, other) || (other is ZegoLocalStream && other._id == _id);
 
   @override
   int get hashCode => _id.hashCode;

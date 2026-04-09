@@ -139,8 +139,7 @@ void main() {
       await errorSink.close();
     });
 
-    test('dispose cancels subscription; further events are ignored',
-        () async {
+    test('dispose cancels subscription; further events are ignored', () async {
       final bridge = _FakeBridge();
       final errorSink = StreamController<ZegoError>.broadcast();
       var calls = 0;

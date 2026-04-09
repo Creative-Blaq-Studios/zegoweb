@@ -30,8 +30,9 @@ class CallScreen extends StatefulWidget {
 
 class _CallScreenState extends State<CallScreen> {
   final _appIdCtrl = TextEditingController();
-  final _serverCtrl =
-      TextEditingController(text: 'wss://webliveroom-api.zego.im/ws');
+  final _serverCtrl = TextEditingController(
+    text: 'wss://webliveroom-api.zego.im/ws',
+  );
   final _roomCtrl = TextEditingController(text: 'demo-room');
   final _userIdCtrl = TextEditingController(text: 'user-1');
   final _userNameCtrl = TextEditingController(text: 'Alice');
@@ -174,8 +175,7 @@ class _CallScreenState extends State<CallScreen> {
               ),
               TextField(
                 controller: _serverCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Server (wss://)'),
+                decoration: const InputDecoration(labelText: 'Server (wss://)'),
               ),
               TextField(
                 controller: _roomCtrl,
@@ -207,8 +207,7 @@ class _CallScreenState extends State<CallScreen> {
                       Expanded(
                         child: Container(
                           color: Colors.black12,
-                          child:
-                              ZegoVideoView(stream: _local!, mirror: true),
+                          child: ZegoVideoView(stream: _local!, mirror: true),
                         ),
                       ),
                     ..._remotes.values.map(

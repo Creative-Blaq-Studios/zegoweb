@@ -18,12 +18,16 @@ scripts:
 
   test:
     run: melos exec --dir-exists=test -- "flutter test"
-    description: Run flutter test in every package that has a test directory.
+    description: Run flutter test (VM) in every package that has a test directory.
+
+  test-chrome:
+    run: melos exec --dir-exists=test -- "flutter test --platform chrome"
+    description: Run flutter test --platform chrome in every package that has a test directory.
 
   format:
     run: melos exec -- "dart format ."
     description: Run dart format across every package.
 
   format-check:
-    run: melos exec -- "dart format --set-exit-if-changed ."
-    description: Fail if any package is not formatted.
+    run: melos exec -- "dart format --output=none --set-exit-if-changed ."
+    description: Fail (without writing changes) if any package is not formatted.

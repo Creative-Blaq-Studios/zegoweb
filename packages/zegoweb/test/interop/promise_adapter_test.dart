@@ -36,8 +36,8 @@ void main() {
     });
 
     test('rejected with {code, message} maps to ZegoError', () async {
-      final err = <String, Object?>{'code': 1002001, 'message': 'token bad'}
-          .jsify();
+      final err =
+          <String, Object?>{'code': 1002001, 'message': 'token bad'}.jsify();
       await expectLater(
         futureFromJsPromise<JSAny?>(_rejected(err)),
         throwsA(

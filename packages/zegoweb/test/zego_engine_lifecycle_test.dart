@@ -21,8 +21,7 @@ void main() {
       engine.destroy();
     });
 
-    test('destroy closes all controllers and is safe to double-call',
-        () async {
+    test('destroy closes all controllers and is safe to double-call', () async {
       final fake = FakeZegoJs();
       final engine = ZegoEngine.test(
         js: fake.asJs(),

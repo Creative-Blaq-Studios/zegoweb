@@ -414,8 +414,7 @@ class ZegoEngine with StateGuard {
         final perms = navObj['permissions'];
         if (perms == null) return ZegoPermissionStatus.unavailable;
         final queryFn = (perms as JSObject)['query'] as JSFunction;
-        final descriptor =
-            <String, Object?>{'name': name}.jsify() as JSObject;
+        final descriptor = <String, Object?>{'name': name}.jsify() as JSObject;
         final promise =
             queryFn.callAsFunction(perms, descriptor) as JSPromise<JSAny?>;
         final result = (await promise.toDart) as JSObject;

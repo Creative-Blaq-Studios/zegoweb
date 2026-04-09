@@ -286,10 +286,8 @@ class FakeZegoJs {
     final obj = JSObject();
 
     // Event listener management
-    obj['on'] =
-        ((JSString name, JSFunction cb) => _on(name.toDart, cb)).toJS;
-    obj['off'] =
-        ((JSString name, JSFunction cb) => _off(name.toDart, cb)).toJS;
+    obj['on'] = ((JSString name, JSFunction cb) => _on(name.toDart, cb)).toJS;
+    obj['off'] = ((JSString name, JSFunction cb) => _off(name.toDart, cb)).toJS;
 
     // Synchronous methods — these must return a Dart value directly
     // (bool / null), NOT a JSPromise wrapper, to match the real 3.12 SDK.

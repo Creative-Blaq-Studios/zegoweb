@@ -43,8 +43,7 @@ Map<String, String> _readDotEnv(String path) {
 Future<void> main(List<String> argv) async {
   final parser = ArgParser()
     ..addOption('user-id', abbr: 'u', help: 'ZEGO user id', mandatory: true)
-    ..addOption('ttl',
-        defaultsTo: '86400', help: 'Effective time in seconds')
+    ..addOption('ttl', defaultsTo: '86400', help: 'Effective time in seconds')
     ..addOption('env-file', defaultsTo: '.env', help: 'Path to .env file')
     ..addFlag('help', abbr: 'h', negatable: false);
 

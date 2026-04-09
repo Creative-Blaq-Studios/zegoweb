@@ -175,9 +175,7 @@ try {
         final winObj = web.window as JSObject;
         final loadErr = winObj['__zegowebLoadError'];
         if (loadErr != null) {
-          final msg = loadErr is JSString
-              ? loadErr.toDart
-              : loadErr.toString();
+          final msg = loadErr is JSString ? loadErr.toDart : loadErr.toString();
           completer.completeError(
             ZegoStateError(
               -1,
