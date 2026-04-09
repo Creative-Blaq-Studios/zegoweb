@@ -1,0 +1,100 @@
+# .github/workflows/ci.yml
+#
+# Continuous integration for the zegoweb monorepo.
+#
+# Runs on every push to main and on every PR. Three jobs:
+#   - analyze: dart format check + flutter analyze across the workspace
+#   - test-vm: pure-Dart unit tests via `flutter test`
+#   - test-chrome: dart:js_interop / DOM tests via `flutter test --platform chrome`
+#
+# The example app integration test (real_sdk_smoke_test.dart) is gated
+# behind --dart-define=ZEGO_APP_ID, so it's NOT run in CI by default —
+# we don't ship credentials. Add it via repository secrets if you want
+# the smoke test to run on PRs.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-flight runs on the same ref when a new commit lands.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Format + analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: stable
+          cache: true
+
+      - name: Activate melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
+
+      - name: Format check
+        run: melos run format-check
+
+      - name: Analyze
+        run: melos run analyze
+
+  test-vm:
+    name: VM tests
+    runs-on: ubuntu-latest
+    needs: analyze
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: stable
+          cache: true
+
+      - name: Activate melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
+
+      - name: VM tests
+        run: melos run test
+
+  test-chrome:
+    name: Chrome interop tests
+    runs-on: ubuntu-latest
+    needs: analyze
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: stable
+          cache: true
+
+      - name: Activate melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
+
+      # GitHub's ubuntu-latest runner has Chrome preinstalled; flutter
+      # picks it up automatically for `--platform chrome`.
+      - name: Chrome interop tests
+        run: melos run test-chrome
