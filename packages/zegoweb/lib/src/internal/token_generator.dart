@@ -18,38 +18,48 @@ import 'package:pointycastle/export.dart';
 
 /// Generates a ZEGO `token04` string.
 ///
-/// Algorithm (as documented by ZEGOCLOUD and implemented by their official
-/// `zego-server-assistant` npm package):
+/// Matches the official Node reference at
+/// https://github.com/ZEGOCLOUD/zego_server_assistant/blob/master/token/nodejs/server/zegoServerAssistant.js
+/// byte-for-byte:
 ///
-///  1. Build a JSON payload:
+///  1. JSON payload:
 ///       { "app_id", "user_id", "nonce", "ctime", "expire", "payload" }
-///     The plaintext is the utf8-encoded JSON string — NOT prefixed with any
-///     length or timestamp fields.
 ///
-///  2. Encrypt with AES-128-CBC + PKCS#7 padding, using:
-///       - key: the first 16 bytes of [serverSecret] (as utf8 bytes)
-///       - iv:  a random 16-byte nonce
+///  2. AES-CBC + PKCS#7 padding with the FULL [serverSecret] as the key.
+///     The cipher variant is chosen by key length (matching Node's
+///     createCipheriv):
+///       - 16-byte secret → AES-128-CBC
+///       - 24-byte secret → AES-192-CBC
+///       - 32-byte secret → AES-256-CBC  (this is what ZEGO issues by default)
 ///
-///  3. Build a binary buffer:
-///       expire (8 bytes i64 BE)
-///       iv_length (2 bytes u16 BE) = 16
-///       iv (16 bytes)
-///       cipher_length (2 bytes u16 BE)
-///       cipher (N bytes)
+///  3. The IV is 16 printable ASCII characters drawn uniformly from
+///     `0123456789abcdefghijklmnopqrstuvwxyz`. The reference impl has always
+///     shipped ASCII IVs — emitting raw random bytes gets the token rejected
+///     with `50120 token format err`.
 ///
-///  4. Return: the literal prefix "04" concatenated with the base64 of that
-///     buffer. The "04" is OUTSIDE the base64, not part of the base64 payload.
+///  4. Binary buffer layout:
+///       expire        (8 bytes i64 BE)
+///       ivLength      (2 bytes u16 BE) = 16
+///       iv            (16 bytes)
+///       cipherLength  (2 bytes u16 BE)
+///       cipher        (N bytes, multiple of 16)
+///
+///  5. Token = literal "04" + base64(buffer). The "04" is OUTSIDE the base64.
 String generateToken04({
   required int appId,
   required String userId,
   required String serverSecret,
   int effectiveTimeInSeconds = 86400,
 }) {
-  if (serverSecret.length < 16) {
+  final keyBytes = Uint8List.fromList(utf8.encode(serverSecret));
+  if (keyBytes.length != 16 &&
+      keyBytes.length != 24 &&
+      keyBytes.length != 32) {
     throw ArgumentError.value(
       serverSecret,
       'serverSecret',
-      'must be at least 16 bytes (ZEGO server secrets are 32)',
+      'must be exactly 16, 24, or 32 bytes '
+          '(ZEGO server secrets are 32 — got ${keyBytes.length})',
     );
   }
 
@@ -69,12 +79,15 @@ String generateToken04({
   };
   final plaintext = Uint8List.fromList(utf8.encode(jsonEncode(payloadMap)));
 
-  final iv = Uint8List.fromList(
-    List<int>.generate(16, (_) => rng.nextInt(256)),
+  // 16 printable ASCII chars from the reference impl's alphabet.
+  const ivAlphabet = '0123456789abcdefghijklmnopqrstuvwxyz';
+  final ivString = String.fromCharCodes(
+    List<int>.generate(
+      16,
+      (_) => ivAlphabet.codeUnitAt(rng.nextInt(ivAlphabet.length)),
+    ),
   );
-  final keyBytes = Uint8List.fromList(
-    utf8.encode(serverSecret).sublist(0, 16),
-  );
+  final iv = Uint8List.fromList(utf8.encode(ivString));
 
   final cipher = _aesCbcPkcs7Encrypt(
     key: keyBytes,
@@ -105,15 +118,19 @@ Uint8List _uint16BE(int value) {
   return b.buffer.asUint8List();
 }
 
-/// AES-128-CBC with PKCS#7 padding via pointycastle. ZEGO's server-side
-/// token verifier expects this exact scheme — GCM and unpadded CBC are both
-/// rejected with `50120 token format err`.
+/// AES-CBC with PKCS#7 padding via pointycastle. The key length determines
+/// the cipher variant (128/192/256). ZEGO's server-side token verifier
+/// expects this exact scheme — GCM and unpadded CBC are both rejected with
+/// `50120 token format err`.
 Uint8List _aesCbcPkcs7Encrypt({
   required Uint8List key,
   required Uint8List iv,
   required Uint8List plaintext,
 }) {
-  assert(key.length == 16, 'AES-128 key must be exactly 16 bytes');
+  assert(
+    key.length == 16 || key.length == 24 || key.length == 32,
+    'AES key must be 16, 24, or 32 bytes',
+  );
   assert(iv.length == 16, 'IV must be exactly 16 bytes');
   final cipher = PaddedBlockCipher('AES/CBC/PKCS7')
     ..init(
