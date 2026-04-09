@@ -289,8 +289,13 @@ class ZegoEngine with StateGuard {
     ZegoLog.info('ZegoEngine.startPlaying streamId=$streamId');
     final JSObject jsStream;
     try {
+      // Omit the second positional arg entirely when we don't have a
+      // play option. Passing `null` explicitly makes the SDK reject with
+      // 1104001 "input parm error" — it dereferences the config object
+      // internally and crashes on null (rather than treating it as
+      // "no config").
       jsStream = await futureFromJsPromise<JSObject>(
-        _js.startPlayingStream(streamId, null),
+        _js.startPlayingStream(streamId),
         convert: (any) => any! as JSObject,
       );
     } catch (e, st) {
