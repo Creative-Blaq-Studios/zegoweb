@@ -97,9 +97,15 @@ class ZegoEngine with StateGuard {
     ZegoLog.info('ZegoEngine.loginRoom room=$roomId user=${user.userId}');
     final token = await _tokenManager.initialToken();
     final jsUser = ZegoUserJs(userID: user.userId, userName: user.userName);
+    // ZegoRoomConfig: userUpdate=true tells the SDK to fire roomUserUpdate
+    // events. It's off by default — without it we can't see peer joins.
+    // maxMemberCount=0 means "unlimited" (the SDK default).
+    final config = JSObject();
+    config['userUpdate'] = true.toJS;
+    config['maxMemberCount'] = 0.toJS;
     try {
       await futureFromJsPromise<void>(
-        _js.loginRoom(roomId, token, jsUser, null),
+        _js.loginRoom(roomId, token, jsUser, config),
       );
     } on ZegoError {
       rethrow;
@@ -452,6 +458,10 @@ class ZegoEngine with StateGuard {
   void _wireEventStreams() {
     _bridgeSubs.add(
       _eventBridge.onRoomStateUpdate.listen((event) {
+        ZegoLog.info(
+          'bridge→engine roomStateUpdate room=${event.roomId} '
+          'state=${event.state.name} errorCode=${event.errorCode}',
+        );
         _roomStateController.add(event.state);
         if (event.state == ZegoRoomState.disconnected &&
             event.errorCode != null &&
@@ -466,10 +476,22 @@ class ZegoEngine with StateGuard {
       }),
     );
     _bridgeSubs.add(
-      _eventBridge.onRoomUserUpdate.listen(_userUpdateController.add),
+      _eventBridge.onRoomUserUpdate.listen((event) {
+        ZegoLog.info(
+          'bridge→engine roomUserUpdate room=${event.roomId} '
+          'type=${event.type.name} users=${event.users.length}',
+        );
+        _userUpdateController.add(event);
+      }),
     );
     _bridgeSubs.add(
-      _eventBridge.onRoomStreamUpdate.listen(_streamUpdateController.add),
+      _eventBridge.onRoomStreamUpdate.listen((event) {
+        ZegoLog.info(
+          'bridge→engine roomStreamUpdate room=${event.roomId} '
+          'type=${event.type.name} streams=${event.streams.length}',
+        );
+        _streamUpdateController.add(event);
+      }),
     );
     _bridgeSubs.add(
       _eventBridge.onPublisherStateUpdate.listen((event) {

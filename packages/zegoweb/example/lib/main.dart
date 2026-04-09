@@ -77,10 +77,25 @@ class _CallScreenState extends State<CallScreen> {
       });
 
       engine.onRoomStreamUpdate.listen((u) async {
+        debugPrint(
+          '[example] roomStreamUpdate type=${u.type.name} '
+          'roomId=${u.roomId} streams=${u.streams.length}',
+        );
+        for (final s in u.streams) {
+          debugPrint(
+            '[example]   stream: id=${s.streamId} user=${s.user.userId}',
+          );
+        }
         if (u.type == ZegoUpdateType.add) {
           for (final s in u.streams) {
-            final r = await engine.startPlaying(s.streamId);
-            if (mounted) setState(() => _remotes[s.streamId] = r);
+            try {
+              debugPrint('[example] startPlaying(${s.streamId}) …');
+              final r = await engine.startPlaying(s.streamId);
+              debugPrint('[example] startPlaying OK: ${r.id}');
+              if (mounted) setState(() => _remotes[s.streamId] = r);
+            } catch (e, st) {
+              debugPrint('[example] startPlaying FAILED: $e\n$st');
+            }
           }
         } else {
           for (final s in u.streams) {
@@ -88,6 +103,17 @@ class _CallScreenState extends State<CallScreen> {
             if (mounted) setState(() => _remotes.remove(s.streamId));
           }
         }
+      });
+
+      engine.onRoomUserUpdate.listen((u) {
+        debugPrint(
+          '[example] roomUserUpdate type=${u.type.name} '
+          'users=${u.users.map((x) => x.userId).toList()}',
+        );
+      });
+
+      engine.onRoomStateChanged.listen((s) {
+        debugPrint('[example] roomStateChanged → ${s.name}');
       });
 
       await engine.loginRoom(
