@@ -1,0 +1,4 @@
+# melos_managed_dependency_overrides: zegoweb_prebuilt
+dependency_overrides:
+  zegoweb_prebuilt:
+    path: ..

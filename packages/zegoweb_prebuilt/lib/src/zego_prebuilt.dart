@@ -36,8 +36,7 @@ class ZegoPrebuilt {
   web.HTMLDivElement? _container;
 
   // Event stream controllers
-  final StreamController<void> _onJoinRoom =
-      StreamController<void>.broadcast();
+  final StreamController<void> _onJoinRoom = StreamController<void>.broadcast();
   final StreamController<void> _onLeaveRoom =
       StreamController<void>.broadcast();
   final StreamController<List<ZegoPrebuiltUser>> _onUserJoin =
@@ -104,8 +103,7 @@ class ZegoPrebuilt {
     }
 
     // Call ZegoUIKitPrebuilt.create(kitToken) on the JS side.
-    final createFn =
-        (web.window as JSObject)['ZegoUIKitPrebuilt'] as JSObject;
+    final createFn = (web.window as JSObject)['ZegoUIKitPrebuilt'] as JSObject;
     final jsResult =
         (createFn['create'] as JSFunction).callAsFunction(null, kitToken.toJS);
 
@@ -125,8 +123,7 @@ class ZegoPrebuilt {
   /// once per instance, before placing ZegoPrebuiltView in the tree.
   Future<void> joinRoom(ZegoPrebuiltConfig config) async {
     if (_destroyed) {
-      throw const ZegoStateError(
-          -1, 'Cannot joinRoom on a destroyed instance');
+      throw const ZegoStateError(-1, 'Cannot joinRoom on a destroyed instance');
     }
     if (_joined) {
       throw const ZegoStateError(-1, 'joinRoom has already been called');

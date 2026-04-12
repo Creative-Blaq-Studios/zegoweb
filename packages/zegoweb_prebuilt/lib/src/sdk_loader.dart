@@ -70,9 +70,8 @@ abstract final class SdkLoader {
       version ?? 'latest',
     );
 
-    final script =
-        web.document.createElement('script') as web.HTMLScriptElement
-          ..src = url;
+    final script = web.document.createElement('script') as web.HTMLScriptElement
+      ..src = url;
 
     script.addEventListener(
       'load',

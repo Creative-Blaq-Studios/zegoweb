@@ -35,8 +35,7 @@ abstract final class ConfigBuilder {
 
     // --- Boolean toggles ---
     js['showPreJoinView'] = config.showPreJoinView.toJS;
-    js['turnOnMicrophoneWhenJoining'] =
-        config.turnOnMicrophoneWhenJoining.toJS;
+    js['turnOnMicrophoneWhenJoining'] = config.turnOnMicrophoneWhenJoining.toJS;
     js['turnOnCameraWhenJoining'] = config.turnOnCameraWhenJoining.toJS;
     js['useFrontFacingCamera'] = config.useFrontFacingCamera.toJS;
     js['showRoomTimer'] = config.showRoomTimer.toJS;
@@ -48,8 +47,7 @@ abstract final class ConfigBuilder {
     js['showTextChat'] = config.showTextChat.toJS;
     js['showUserList'] = config.showUserList.toJS;
     js['showScreenSharingButton'] = config.showScreenSharingButton.toJS;
-    js['showLeaveRoomConfirmDialog'] =
-        config.showLeaveRoomConfirmDialog.toJS;
+    js['showLeaveRoomConfirmDialog'] = config.showLeaveRoomConfirmDialog.toJS;
 
     // --- Optional typed fields ---
     if (config.maxUsers != null) {
@@ -111,8 +109,8 @@ abstract final class ConfigBuilder {
         value,
         'rawConfig["$key"]',
         'Functions are not allowed in rawConfig. Use the matching Stream '
-        'getter on ZegoPrebuilt instead (e.g. prebuilt.onJoinRoom). '
-        'If no matching Stream exists, file a PR to add the event.',
+            'getter on ZegoPrebuilt instead (e.g. prebuilt.onJoinRoom). '
+            'If no matching Stream exists, file a PR to add the event.',
       );
     }
     if (value is Map) {
