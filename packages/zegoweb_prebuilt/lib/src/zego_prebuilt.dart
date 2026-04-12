@@ -64,7 +64,7 @@ class ZegoPrebuilt {
     String? userName,
   }) {
     return generateKitTokenForTest(
-        appId, serverSecret, roomId, userId, userName);
+        appId, serverSecret, roomId, userId, userName ?? userId);
   }
 
   /// Production kit-token wrapper around a server-minted token04.
@@ -76,7 +76,7 @@ class ZegoPrebuilt {
     String? userName,
   }) {
     return generateKitTokenForProduction(
-        appId, serverToken, roomId, userId, userName);
+        appId, serverToken, roomId, userId, userName ?? userId);
   }
 
   /// Create a configured instance. Async.
@@ -153,8 +153,11 @@ class ZegoPrebuilt {
     };
 
     final jsConfig = ConfigBuilder.build(config, streamControllers);
+    // The UIKit's joinRoom(config) takes a single config object with
+    // `container` as a key inside it.
+    jsConfig['container'] = _container!;
     (_jsInstance['joinRoom'] as JSFunction)
-        .callAsFunction(_jsInstance, _container!, jsConfig);
+        .callAsFunction(_jsInstance, jsConfig);
 
     _joined = true;
   }
