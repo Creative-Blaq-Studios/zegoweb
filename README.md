@@ -13,7 +13,7 @@ SDK. Three packages live here:
 |---|---|---|
 | [`packages/zegoweb`](packages/zegoweb) | Core RTC wrapper — thin Dart API over the Express SDK | **active** |
 | [`packages/zegoweb_prebuilt`](packages/zegoweb_prebuilt) | Thin wrap of `@zegocloud/zego-uikit-prebuilt` (DOM-based call UI) | **active** |
-| [`packages/zegoweb_ui`](packages/zegoweb_ui) | Flutter-native opinionated call UI built on top of `zegoweb` | planned |
+| [`packages/zegoweb_ui`](packages/zegoweb_ui) | Flutter-native opinionated call UI built on top of `zegoweb` | **active** |
 
 ## Which package should I use?
 
