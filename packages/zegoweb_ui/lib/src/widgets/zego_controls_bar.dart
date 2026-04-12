@@ -66,9 +66,7 @@ class ZegoControlsBar extends StatelessWidget {
     if (config.showMicrophoneToggle) {
       buttons.add(_controlButton(
         icon: isMicOn ? Icons.mic : Icons.mic_off,
-        color: isMicOn
-            ? theme.activeControlColor
-            : theme.inactiveControlColor,
+        color: isMicOn ? theme.activeControlColor : theme.inactiveControlColor,
         onPressed: onToggleMic,
       ));
     }
@@ -76,9 +74,8 @@ class ZegoControlsBar extends StatelessWidget {
     if (config.showCameraToggle) {
       buttons.add(_controlButton(
         icon: isCameraOn ? Icons.videocam : Icons.videocam_off,
-        color: isCameraOn
-            ? theme.activeControlColor
-            : theme.inactiveControlColor,
+        color:
+            isCameraOn ? theme.activeControlColor : theme.inactiveControlColor,
         onPressed: onToggleCamera,
       ));
     }
@@ -122,10 +119,9 @@ class ZegoControlsBar extends StatelessWidget {
       color: theme.controlsBarColor,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: buttons
-            .expand((btn) => [btn, const SizedBox(width: 12)])
-            .toList()
-          ..removeLast(),
+        children:
+            buttons.expand((btn) => [btn, const SizedBox(width: 12)]).toList()
+              ..removeLast(),
       ),
     );
   }

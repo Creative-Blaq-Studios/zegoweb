@@ -20,11 +20,16 @@ void main() {
 
     test('all fields can be overridden', () {
       const config = ZegoCallConfig(
-        roomId: 'r1', userId: 'u1', userName: 'Alice',
+        roomId: 'r1',
+        userId: 'u1',
+        userName: 'Alice',
         layout: ZegoLayoutMode.pip,
-        showPreJoinView: false, showMicrophoneToggle: false,
-        showCameraToggle: false, showScreenShareButton: false,
-        showDevicePicker: false, showLayoutSwitcher: false,
+        showPreJoinView: false,
+        showMicrophoneToggle: false,
+        showCameraToggle: false,
+        showScreenShareButton: false,
+        showDevicePicker: false,
+        showLayoutSwitcher: false,
       );
       expect(config.userName, 'Alice');
       expect(config.layout, ZegoLayoutMode.pip);

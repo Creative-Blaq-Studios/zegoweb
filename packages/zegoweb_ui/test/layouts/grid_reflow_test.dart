@@ -12,9 +12,12 @@ void main() {
     test('7 participants → [4, 3]', () => expect(gridReflow(7), [4, 3]));
     test('8 participants → [4, 4]', () => expect(gridReflow(8), [4, 4]));
     test('9 participants → [3, 3, 3]', () => expect(gridReflow(9), [3, 3, 3]));
-    test('10 participants → [4, 3, 3]', () => expect(gridReflow(10), [4, 3, 3]));
-    test('11 participants → [4, 4, 3]', () => expect(gridReflow(11), [4, 4, 3]));
-    test('12 participants → [4, 4, 4]', () => expect(gridReflow(12), [4, 4, 4]));
+    test(
+        '10 participants → [4, 3, 3]', () => expect(gridReflow(10), [4, 3, 3]));
+    test(
+        '11 participants → [4, 4, 3]', () => expect(gridReflow(11), [4, 4, 3]));
+    test(
+        '12 participants → [4, 4, 4]', () => expect(gridReflow(12), [4, 4, 4]));
     test('0 participants → []', () => expect(gridReflow(0), <int>[]));
 
     test('no row has only 1 tile (for n >= 2)', () {

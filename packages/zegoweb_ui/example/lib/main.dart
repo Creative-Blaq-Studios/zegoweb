@@ -63,9 +63,9 @@ class _SetupScreenState extends State<SetupScreen> {
           ),
           onCallEnded: () => Navigator.pop(context),
           onError: (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error: ${e.message}')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Error: ${e.message}')));
           },
         ),
       ),

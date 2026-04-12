@@ -40,8 +40,7 @@ void main() {
       expect(find.byIcon(Icons.call_end), findsOneWidget);
     });
 
-    testWidgets('hides mic when showMicrophoneToggle is false',
-        (tester) async {
+    testWidgets('hides mic when showMicrophoneToggle is false', (tester) async {
       const config = ZegoCallConfig(
         roomId: 'r1',
         userId: 'u1',
@@ -136,8 +135,7 @@ void main() {
       expect(find.byIcon(Icons.videocam), findsNothing);
     });
 
-    testWidgets('shows stop_screen_share when screen sharing',
-        (tester) async {
+    testWidgets('shows stop_screen_share when screen sharing', (tester) async {
       const config = ZegoCallConfig(roomId: 'r1', userId: 'u1');
 
       await tester.pumpWidget(_wrap(

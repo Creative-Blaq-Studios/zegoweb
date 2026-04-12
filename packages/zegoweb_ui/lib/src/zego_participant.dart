@@ -61,7 +61,6 @@ class ZegoParticipant {
       Object.hash(userId, userName, isMuted, isCameraOff, isLocal);
 
   @override
-  String toString() =>
-      'ZegoParticipant(userId: $userId, userName: $userName, '
+  String toString() => 'ZegoParticipant(userId: $userId, userName: $userName, '
       'isMuted: $isMuted, isCameraOff: $isCameraOff, isLocal: $isLocal)';
 }

@@ -18,7 +18,8 @@ void main() {
     });
 
     test('copyWith preserves unchanged fields', () {
-      const theme = ZegoCallTheme(backgroundColor: Colors.black, hangUpColor: Colors.red);
+      const theme =
+          ZegoCallTheme(backgroundColor: Colors.black, hangUpColor: Colors.red);
       final copied = theme.copyWith(hangUpColor: Colors.pink);
       expect(copied.backgroundColor, Colors.black);
       expect(copied.hangUpColor, Colors.pink);
@@ -35,7 +36,8 @@ void main() {
 
     test('resolve returns defaults from ColorScheme when no extension', () {
       final colorScheme = ColorScheme.fromSeed(seedColor: Colors.indigo);
-      final resolved = ZegoCallTheme.resolve(null, colorScheme, Typography.material2021().englishLike);
+      final resolved = ZegoCallTheme.resolve(
+          null, colorScheme, Typography.material2021().englishLike);
       expect(resolved.backgroundColor, colorScheme.surface);
       expect(resolved.hangUpColor, colorScheme.error);
       expect(resolved.tileBorderRadius, 12.0);
@@ -45,7 +47,8 @@ void main() {
     test('resolve merges extension over defaults', () {
       final colorScheme = ColorScheme.fromSeed(seedColor: Colors.indigo);
       const ext = ZegoCallTheme(hangUpColor: Colors.orange);
-      final resolved = ZegoCallTheme.resolve(ext, colorScheme, Typography.material2021().englishLike);
+      final resolved = ZegoCallTheme.resolve(
+          ext, colorScheme, Typography.material2021().englishLike);
       expect(resolved.hangUpColor, Colors.orange);
       expect(resolved.backgroundColor, colorScheme.surface);
     });

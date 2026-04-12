@@ -4,7 +4,12 @@ import 'package:zegoweb_ui/src/zego_participant.dart';
 void main() {
   group('ZegoParticipant', () {
     test('stores all fields', () {
-      const p = ZegoParticipant(userId: 'u1', userName: 'Alice', isMuted: true, isCameraOff: false, isLocal: true);
+      const p = ZegoParticipant(
+          userId: 'u1',
+          userName: 'Alice',
+          isMuted: true,
+          isCameraOff: false,
+          isLocal: true);
       expect(p.userId, 'u1');
       expect(p.userName, 'Alice');
       expect(p.stream, isNull);

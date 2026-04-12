@@ -30,11 +30,9 @@ class ZegoCallTheme extends ThemeExtension<ZegoCallTheme> {
     TextTheme textTheme,
   ) {
     return ZegoCallTheme(
-      backgroundColor:
-          extension?.backgroundColor ?? colorScheme.surface,
+      backgroundColor: extension?.backgroundColor ?? colorScheme.surface,
       tileBackgroundColor:
-          extension?.tileBackgroundColor ??
-          colorScheme.surfaceContainerHighest,
+          extension?.tileBackgroundColor ?? colorScheme.surfaceContainerHighest,
       tileBorderRadius: extension?.tileBorderRadius ?? 12.0,
       controlsBarColor:
           extension?.controlsBarColor ?? colorScheme.surfaceContainer,
@@ -43,11 +41,9 @@ class ZegoCallTheme extends ThemeExtension<ZegoCallTheme> {
       inactiveControlColor:
           extension?.inactiveControlColor ?? colorScheme.onSurfaceVariant,
       hangUpColor: extension?.hangUpColor ?? colorScheme.error,
-      nameTextStyle:
-          extension?.nameTextStyle ??
+      nameTextStyle: extension?.nameTextStyle ??
           textTheme.labelSmall?.copyWith(color: colorScheme.onSurface),
-      micIndicatorColor:
-          extension?.micIndicatorColor ?? colorScheme.primary,
+      micIndicatorColor: extension?.micIndicatorColor ?? colorScheme.primary,
     );
   }
 
@@ -83,7 +79,8 @@ class ZegoCallTheme extends ThemeExtension<ZegoCallTheme> {
       backgroundColor: Color.lerp(backgroundColor, other.backgroundColor, t),
       tileBackgroundColor:
           Color.lerp(tileBackgroundColor, other.tileBackgroundColor, t),
-      tileBorderRadius: _lerpDouble(tileBorderRadius, other.tileBorderRadius, t),
+      tileBorderRadius:
+          _lerpDouble(tileBorderRadius, other.tileBorderRadius, t),
       controlsBarColor: Color.lerp(controlsBarColor, other.controlsBarColor, t),
       activeControlColor:
           Color.lerp(activeControlColor, other.activeControlColor, t),
