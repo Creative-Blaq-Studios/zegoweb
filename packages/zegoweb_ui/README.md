@@ -1,39 +1,48 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# zegoweb_ui
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+Flutter-native call UI built on [`zegoweb`](../zegoweb) core.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+> Not affiliated with or endorsed by ZEGOCLOUD.
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+## Status
 
-## Features
+- Platforms: **web only**
+- Depends on: `zegoweb` (core RTC wrapper)
+- Layouts: Grid (full-width reflow), Sidebar (speaker + sidebar), PiP (floating self-view)
+- Theming: `ThemeExtension<ZegoCallTheme>` with `ColorScheme` fallbacks
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+## Install
 
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
-
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
-
-```dart
-const like = 'sample';
+```bash
+flutter pub add zegoweb_ui
 ```
 
-## Additional information
+## Quick Start
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+```dart
+import 'package:zegoweb/zegoweb.dart';
+import 'package:zegoweb_ui/zegoweb_ui.dart';
+
+Navigator.push(context, MaterialPageRoute(
+  builder: (_) => ZegoCallScreen(
+    engineConfig: ZegoEngineConfig(
+      appId: 123456789,
+      server: 'wss://webliveroom-api.zego.im/ws',
+      scenario: ZegoScenario.communication,
+      tokenProvider: () async => await fetchToken(),
+    ),
+    callConfig: ZegoCallConfig(
+      roomId: 'my-room',
+      userId: 'user-1',
+      userName: 'Alice',
+    ),
+    onCallEnded: () => Navigator.pop(context),
+  ),
+));
+```
+
+See [`example/`](example/) for a full demo.
+
+## License
+
+See [`LICENSE`](LICENSE).
