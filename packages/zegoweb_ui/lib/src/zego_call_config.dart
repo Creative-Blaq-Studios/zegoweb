@@ -12,7 +12,6 @@ class ZegoCallConfig {
     this.showMicrophoneToggle = true,
     this.showCameraToggle = true,
     this.showScreenShareButton = true,
-    this.showDevicePicker = true,
     this.showLayoutSwitcher = true,
   });
 
@@ -24,6 +23,5 @@ class ZegoCallConfig {
   final bool showMicrophoneToggle;
   final bool showCameraToggle;
   final bool showScreenShareButton;
-  final bool showDevicePicker;
   final bool showLayoutSwitcher;
 }
