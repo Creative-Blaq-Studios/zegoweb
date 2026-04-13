@@ -13,6 +13,7 @@ class ZegoCallConfig {
     this.showCameraToggle = true,
     this.showScreenShareButton = false,
     this.showLayoutSwitcher = true,
+    this.debugMode = false,
   });
 
   final String roomId;
@@ -24,4 +25,9 @@ class ZegoCallConfig {
   final bool showCameraToggle;
   final bool showScreenShareButton;
   final bool showLayoutSwitcher;
+
+  /// When true, a floating audio debug overlay is shown in the call screen.
+  /// The overlay shows live mic levels, active-speaker state, and controls
+  /// for adjusting the detection threshold and debounce at runtime.
+  final bool debugMode;
 }
