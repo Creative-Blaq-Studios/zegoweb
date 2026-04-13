@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:zegoweb/zegoweb.dart';
+import 'package:zegoweb/src/models/zego_sound_level.dart';
 
 import 'package:zegoweb_ui/src/zego_call_config.dart';
 import 'package:zegoweb_ui/src/zego_call_state.dart';
@@ -68,10 +69,15 @@ class ZegoCallController extends ChangeNotifier {
   /// The most recent error, if any.
   ZegoError? get lastError => _lastError;
 
-  int _activeSpeakerIndex = 0;
+  int _activeSpeakerIndex = -1;
 
   /// Index of the active speaker within [participants].
   int get activeSpeakerIndex => _activeSpeakerIndex;
+
+  Timer? _speakerDebounce;
+  int _pendingSpeakerIndex = -1;
+  static const _speakerThreshold = 5.0;
+  static const _speakerDebounceMs = 500;
 
   // ---------------------------------------------------------------------------
   // Internal
@@ -141,6 +147,10 @@ class ZegoCallController extends ChangeNotifier {
         _engine!.onError.listen(_onError),
       ]);
 
+      _subscriptions.add(
+        _engine!.onSoundLevelUpdate.listen(_onSoundLevelUpdate),
+      );
+
       await _engine!.loginRoom(
         callConfig.roomId,
         ZegoUser(
@@ -190,6 +200,9 @@ class ZegoCallController extends ChangeNotifier {
         await sub.cancel();
       }
       _subscriptions.clear();
+      _speakerDebounce?.cancel();
+      _speakerDebounce = null;
+      _pendingSpeakerIndex = -1;
 
       // Release camera/mic hardware before destroying the engine.
       if (_localStream != null) {
@@ -207,7 +220,7 @@ class ZegoCallController extends ChangeNotifier {
     _localStream = null;
     _participants.clear();
     _remoteStreams.clear();
-    _activeSpeakerIndex = 0;
+    _activeSpeakerIndex = -1;
     _setState(ZegoCallState.idle);
   }
 
@@ -315,6 +328,69 @@ class ZegoCallController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _onSoundLevelUpdate(ZegoSoundLevelUpdate update) {
+    // Find the loudest stream above the speaking threshold.
+    String? loudestStreamId;
+    double loudestLevel = 0;
+    for (final level in update.levels) {
+      if (level.soundLevel > _speakerThreshold &&
+          level.soundLevel > loudestLevel) {
+        loudestLevel = level.soundLevel;
+        loudestStreamId = level.streamId;
+      }
+    }
+
+    if (loudestStreamId == null) {
+      // No one is speaking — clear active speaker.
+      _speakerDebounce?.cancel();
+      _speakerDebounce = null;
+      _pendingSpeakerIndex = -1;
+      if (_activeSpeakerIndex != -1) {
+        _activeSpeakerIndex = -1;
+        notifyListeners();
+      }
+      return;
+    }
+
+    // Map streamId to participant index.
+    final newIndex = _participantIndexForStream(loudestStreamId);
+    if (newIndex == _activeSpeakerIndex) {
+      // Same speaker — cancel any pending switch.
+      _speakerDebounce?.cancel();
+      _speakerDebounce = null;
+      _pendingSpeakerIndex = -1;
+      return;
+    }
+
+    if (newIndex == _pendingSpeakerIndex) {
+      // Already debouncing for this speaker — let the timer run.
+      return;
+    }
+
+    // New speaker candidate — start debounce.
+    _pendingSpeakerIndex = newIndex;
+    _speakerDebounce?.cancel();
+    _speakerDebounce = Timer(
+      const Duration(milliseconds: _speakerDebounceMs),
+      () {
+        if (_pendingSpeakerIndex != -1 &&
+            _pendingSpeakerIndex != _activeSpeakerIndex) {
+          _activeSpeakerIndex = _pendingSpeakerIndex;
+          _pendingSpeakerIndex = -1;
+          notifyListeners();
+        }
+      },
+    );
+  }
+
+  int _participantIndexForStream(String streamId) {
+    for (var i = 0; i < _participants.length; i++) {
+      final p = _participants[i];
+      if (streamId == 'stream-${p.userId}') return i;
+    }
+    return -1;
+  }
+
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
@@ -344,6 +420,7 @@ class ZegoCallController extends ChangeNotifier {
     if (_state != ZegoCallState.idle) {
       leave();
     }
+    _speakerDebounce?.cancel();
     super.dispose();
   }
 }
