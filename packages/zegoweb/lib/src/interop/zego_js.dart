@@ -138,6 +138,10 @@ extension type ZegoExpressEngineJs._(JSObject _) implements JSObject {
     bool enable,
   );
 
+  /// `setSoundLevelDelegate(enable, interval?)` → `void`. SYNCHRONOUS in 3.12.
+  /// Enables/disables periodic `soundLevelUpdate` events. [interval] is in ms.
+  external void setSoundLevelDelegate(bool enable, [int? interval]);
+
   // -- Token refresh --------------------------------------------------------
 
   /// `renewToken(token, [roomID])` → `boolean`. SYNCHRONOUS in 3.12.
@@ -207,4 +211,5 @@ abstract final class ZegoJsEvents {
   static const tokenWillExpire = 'tokenWillExpire';
   static const publishQualityUpdate = 'publishQualityUpdate';
   static const playQualityUpdate = 'playQualityUpdate';
+  static const soundLevelUpdate = 'soundLevelUpdate';
 }
