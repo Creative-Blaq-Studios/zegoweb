@@ -129,12 +129,21 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
           return ZegoPreJoinView(
             userName: widget.callConfig.userName ?? widget.callConfig.userId,
             onJoin: _handleJoin,
-            previewWidget: _controller.localStream != null
+            previewWidget: _controller.localStream != null &&
+                    _controller.isCameraOn
                 ? ZegoVideoView(
                     stream: _controller.localStream!,
                     mirror: true,
                   )
                 : null,
+            isMicOn: _controller.isMicOn,
+            isCameraOn: _controller.isCameraOn,
+            onToggleMic: _controller.toggleMic,
+            onToggleCamera: _controller.toggleCamera,
+            cameras: _controller.cameras,
+            microphones: _controller.microphones,
+            onCameraSelected: _controller.switchCamera,
+            onMicrophoneSelected: _controller.switchMicrophone,
           );
         }
         return const Center(child: CircularProgressIndicator());

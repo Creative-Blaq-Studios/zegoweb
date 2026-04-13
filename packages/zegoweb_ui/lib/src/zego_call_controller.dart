@@ -81,6 +81,12 @@ class ZegoCallController extends ChangeNotifier {
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   final Map<String, ZegoRemoteStream> _remoteStreams = {};
 
+  List<ZegoDeviceInfo> _cameras = [];
+  List<ZegoDeviceInfo> get cameras => _cameras;
+
+  List<ZegoDeviceInfo> _microphones = [];
+  List<ZegoDeviceInfo> get microphones => _microphones;
+
   // ---------------------------------------------------------------------------
   // Actions
   // ---------------------------------------------------------------------------
@@ -95,6 +101,8 @@ class ZegoCallController extends ChangeNotifier {
       await ZegoWeb.loadScript();
       _engine = await ZegoWeb.createEngine(engineConfig);
       _localStream = await _engine!.createLocalStream();
+      _cameras = await _engine!.getCameras();
+      _microphones = await _engine!.getMicrophones();
       notifyListeners();
     } catch (e) {
       _lastError = e is ZegoError ? e : ZegoError(-1, e.toString());
