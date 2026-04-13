@@ -2,31 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:zegoweb_ui/src/models/zego_audio_settings.dart';
 import 'package:zegoweb_ui/src/zego_call_theme.dart';
 
-/// An overlay popover anchored above the gear button that exposes
-/// AEC / ANS / AGC toggle switches.
+/// The content of the audio settings popover (AEC / ANS / AGC toggles).
 ///
-/// Instantiate via [ZegoControlsBar] which owns the [LayerLink] and
-/// [OverlayEntry] lifecycle.
+/// Positioning and lifecycle are handled by the caller ([ZegoControlsBar]),
+/// which uses [showDialog] to anchor the popover above the gear button — the
+/// same pattern used by [ZegoControlPill] for device selection.
 class ZegoAudioSettingsPopover extends StatefulWidget {
   const ZegoAudioSettingsPopover({
     super.key,
-    required this.link,
     required this.settings,
     required this.onChanged,
-    required this.onDismiss,
   });
-
-  /// The [LayerLink] attached to the gear button via [CompositedTransformTarget].
-  final LayerLink link;
 
   /// Current audio settings shown in the popover.
   final ZegoAudioSettings settings;
 
   /// Called immediately when a toggle changes.
   final ValueChanged<ZegoAudioSettings> onChanged;
-
-  /// Called when the user taps outside the popover.
-  final VoidCallback onDismiss;
 
   @override
   State<ZegoAudioSettingsPopover> createState() =>
@@ -57,34 +49,11 @@ class _ZegoAudioSettingsPopoverState extends State<ZegoAudioSettingsPopover> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Full-screen tap-to-dismiss area.
-        Positioned.fill(
-          child: GestureDetector(
-            onTap: widget.onDismiss,
-            behavior: HitTestBehavior.opaque,
-            child: const SizedBox.expand(),
-          ),
-        ),
-        // Popover anchored above the gear button.
-        CompositedTransformFollower(
-          link: widget.link,
-          targetAnchor: Alignment.topCenter,
-          followerAnchor: Alignment.bottomCenter,
-          offset: const Offset(0, -8),
-          child: Align(
-            // Prevents the Column from expanding to fill available space.
-            alignment: Alignment.topLeft,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _PopoverCard(local: _local, onToggle: _toggle),
-                const _PopoverArrow(),
-              ],
-            ),
-          ),
-        ),
+        _PopoverCard(local: _local, onToggle: _toggle),
+        const _PopoverArrow(),
       ],
     );
   }

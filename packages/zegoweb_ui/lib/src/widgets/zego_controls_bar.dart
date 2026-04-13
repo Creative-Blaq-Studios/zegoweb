@@ -62,54 +62,53 @@ class ZegoControlsBar extends StatefulWidget {
 }
 
 class _ZegoControlsBarState extends State<ZegoControlsBar> {
-  final LayerLink _layerLink = LayerLink();
-  OverlayEntry? _settingsOverlay;
-
-  @override
-  void didUpdateWidget(ZegoControlsBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // When the controller pushes new settings, rebuild the open popover.
-    if (oldWidget.audioSettings != widget.audioSettings) {
-      _settingsOverlay?.markNeedsBuild();
-    }
-  }
-
-  @override
-  void dispose() {
-    _closeSettings();
-    super.dispose();
-  }
+  final _gearKey = GlobalKey();
+  bool _settingsOpen = false;
 
   void _toggleSettings() {
-    if (_settingsOverlay != null) {
-      _closeSettings();
-    } else {
-      _openSettings();
-    }
-  }
+    if (_settingsOpen) return;
+    final renderBox =
+        _gearKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
 
-  void _openSettings() {
-    _settingsOverlay = OverlayEntry(
-      builder: (_) => ZegoAudioSettingsPopover(
-        link: _layerLink,
-        settings: widget.audioSettings,
-        onChanged: (s) {
-          widget.onSettingsChanged?.call(s);
-          _settingsOverlay?.markNeedsBuild();
-        },
-        onDismiss: _closeSettings,
-      ),
-    );
-    Overlay.of(context).insert(_settingsOverlay!);
-    setState(() {});
-  }
+    setState(() => _settingsOpen = true);
 
-  void _closeSettings() {
-    final overlay = _settingsOverlay;
-    _settingsOverlay = null;
-    overlay?.remove();
-    overlay?.dispose(); // required since Flutter 3.22 to release OverlayEntry resources
-    if (mounted) setState(() {});
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.transparent,
+      builder: (dialogContext) {
+        final position = renderBox.localToGlobal(Offset.zero);
+        final screenSize = MediaQuery.of(dialogContext).size;
+        // Position the popover so its bottom sits above the gear button.
+        final bottomOffset = screenSize.height - position.dy + 8;
+        // Center the popover horizontally over the gear button.
+        final centerX = position.dx + renderBox.size.width / 2;
+
+        return Stack(
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.of(dialogContext).pop(),
+              behavior: HitTestBehavior.opaque,
+              child: const SizedBox.expand(),
+            ),
+            Positioned(
+              bottom: bottomOffset,
+              left: centerX,
+              child: FractionalTranslation(
+                // Shift left by 50% of the popover's own width to center it.
+                translation: const Offset(-0.5, 0),
+                child: ZegoAudioSettingsPopover(
+                  settings: widget.audioSettings,
+                  onChanged: (s) => widget.onSettingsChanged?.call(s),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    ).then((_) {
+      if (mounted) setState(() => _settingsOpen = false);
+    });
   }
 
   @override
@@ -213,21 +212,19 @@ class _ZegoControlsBarState extends State<ZegoControlsBar> {
       backgroundColor: theme.hangUpColor,
     ));
 
-    // Gear / settings button — wraps CompositedTransformTarget so the popover
-    // can anchor itself above the button via the shared LayerLink.
+    // Gear / settings button — GlobalKey lets _toggleSettings locate the
+    // button's screen position for dialog placement.
     controls.add(
-      CompositedTransformTarget(
-        link: _layerLink,
-        child: ZegoControlCircle(
-          icon: Icons.settings,
-          color: _settingsOverlay != null
-              ? theme.controlPillColor!
-              : theme.activeControlColor!,
-          backgroundColor: _settingsOverlay != null
-              ? (theme.activeControlColor ?? Colors.white).withValues(alpha: 0.15)
-              : theme.controlCircleColor!,
-          onPressed: _toggleSettings,
-        ),
+      ZegoControlCircle(
+        key: _gearKey,
+        icon: Icons.settings,
+        color: _settingsOpen
+            ? theme.controlPillColor!
+            : theme.activeControlColor!,
+        backgroundColor: _settingsOpen
+            ? (theme.activeControlColor ?? Colors.white).withValues(alpha: 0.15)
+            : theme.controlCircleColor!,
+        onPressed: _toggleSettings,
       ),
     );
 
