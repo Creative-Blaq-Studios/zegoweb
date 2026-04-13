@@ -26,6 +26,8 @@ export 'src/models/zego_device_info.dart' show ZegoDeviceInfo;
 export 'src/models/zego_stream_info.dart' show ZegoStreamInfo;
 export 'src/models/zego_events.dart'
     show ZegoRoomUserUpdate, ZegoRoomStreamUpdate;
+export 'src/models/zego_sound_level.dart'
+    show ZegoSoundLevelInfo, ZegoSoundLevelUpdate;
 
 // Enums
 export 'src/models/zego_enums.dart'
