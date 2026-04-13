@@ -15,13 +15,8 @@ class ZegoUiExampleApp extends StatelessWidget {
       title: 'zegoweb_ui example',
       theme: ThemeData(
         colorSchemeSeed: Colors.indigo,
+        brightness: Brightness.dark,
         useMaterial3: true,
-        extensions: const [
-          ZegoCallTheme(
-            backgroundColor: Color(0xFF1A1A2E),
-            tileBackgroundColor: Color(0xFF16213E),
-          ),
-        ],
       ),
       home: const SetupScreen(),
     );
