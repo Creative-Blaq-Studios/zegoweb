@@ -24,6 +24,7 @@ import 'dart:js_interop_unsafe';
 
 import '../models/zego_enums.dart';
 import '../models/zego_events.dart';
+import '../models/zego_sound_level.dart';
 import '../models/zego_stream_info.dart';
 import '../models/zego_user.dart';
 import '../token_bridge.dart';
@@ -177,6 +178,12 @@ class EventBridge implements TokenBridge {
       registerEvent<ZegoTokenWillExpire>(
         ZegoJsEvents.tokenWillExpire,
         _parseTokenWillExpire,
+      );
+
+  Stream<ZegoSoundLevelUpdate> get onSoundLevelUpdate =>
+      registerEvent<ZegoSoundLevelUpdate>(
+        ZegoJsEvents.soundLevelUpdate,
+        _parseSoundLevelUpdate,
       );
 }
 
@@ -368,6 +375,28 @@ ZegoTokenWillExpire _parseTokenWillExpire(List<JSAny?> args) {
     roomId: _argString(args, 0) ?? '',
     remainingSeconds: 30,
   );
+}
+
+/// Parses `soundLevelUpdate(soundLevelList)` — single array arg.
+/// Each entry is a JS object with `{streamID, soundLevel}`.
+ZegoSoundLevelUpdate _parseSoundLevelUpdate(List<JSAny?> args) {
+  final list = _argArray(args, 0);
+  final levels = <ZegoSoundLevelInfo>[];
+  if (list != null) {
+    for (var i = 0; i < list.length; i++) {
+      final entry = list[i];
+      final streamId = _readString(entry, 'streamID') ?? '';
+      final rawLevel = entry['soundLevel'];
+      final soundLevel = rawLevel != null && rawLevel.isA<JSNumber>()
+          ? (rawLevel as JSNumber).toDartDouble
+          : 0.0;
+      levels.add(ZegoSoundLevelInfo(
+        streamId: streamId,
+        soundLevel: soundLevel,
+      ));
+    }
+  }
+  return ZegoSoundLevelUpdate(levels: levels);
 }
 
 class _EventEntry<T> {
