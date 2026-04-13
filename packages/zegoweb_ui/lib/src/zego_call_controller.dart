@@ -79,6 +79,8 @@ class ZegoCallController extends ChangeNotifier {
   /// Current audio processing settings (AEC / ANS / AGC).
   ZegoAudioSettings get audioSettings => _audioSettings;
 
+  bool _updatingAudioSettings = false;
+
   // ---------------------------------------------------------------------------
   // Internal
   // ---------------------------------------------------------------------------
@@ -116,7 +118,13 @@ class ZegoCallController extends ChangeNotifier {
     try {
       await ZegoWeb.loadScript();
       _engine = await ZegoWeb.createEngine(engineConfig);
-      _localStream = await _engine!.createLocalStream();
+      _localStream = await _engine!.createLocalStream(
+        config: ZegoStreamConfig(
+          echoCancellation: _audioSettings.echoCancellation,
+          noiseSuppression: _audioSettings.noiseSuppression,
+          autoGainControl: _audioSettings.autoGainControl,
+        ),
+      );
       _cameras = await _engine!.getCameras();
       _microphones = await _engine!.getMicrophones();
       if (_cameras.isNotEmpty) _selectedCameraId = _cameras.first.deviceId;
@@ -165,7 +173,13 @@ class ZegoCallController extends ChangeNotifier {
         ),
       );
 
-      _localStream ??= await _engine!.createLocalStream();
+      _localStream ??= await _engine!.createLocalStream(
+        config: ZegoStreamConfig(
+          echoCancellation: _audioSettings.echoCancellation,
+          noiseSuppression: _audioSettings.noiseSuppression,
+          autoGainControl: _audioSettings.autoGainControl,
+        ),
+      );
       final streamId = 'stream-${callConfig.userId}';
       await _engine!.startPublishing(streamId, _localStream!);
 
@@ -288,29 +302,45 @@ class ZegoCallController extends ChangeNotifier {
 
     if (_state != ZegoCallState.inCall || _engine == null) return;
 
-    final streamId = 'stream-${callConfig.userId}';
-    final oldStream = _localStream;
-    if (oldStream != null) {
-      try {
-        await _engine!.stopPublishing(streamId);
-      } catch (_) {}
-      try {
-        _engine!.destroyLocalStream(oldStream);
-      } catch (_) {}
-    }
+    if (_updatingAudioSettings) return;
+    _updatingAudioSettings = true;
+    try {
+      final streamId = 'stream-${callConfig.userId}';
+      final oldStream = _localStream;
+      if (oldStream != null) {
+        try {
+          await _engine!.stopPublishing(streamId);
+        } catch (_) {}
+        try {
+          _engine!.destroyLocalStream(oldStream);
+        } catch (_) {}
+      }
 
-    _localStream = await _engine!.createLocalStream(
-      config: ZegoStreamConfig(
-        camera: _isCameraOn,
-        microphone: _isMicOn,
-        echoCancellation: settings.echoCancellation,
-        noiseSuppression: settings.noiseSuppression,
-        autoGainControl: settings.autoGainControl,
-      ),
-    );
-    await _engine!.startPublishing(streamId, _localStream!);
-    _updateLocalParticipant();
-    notifyListeners();
+      // Clear before async gap so stale reference doesn't survive a failure.
+      _localStream = null;
+      _updateLocalParticipant();
+      notifyListeners();
+
+      try {
+        _localStream = await _engine!.createLocalStream(
+          config: ZegoStreamConfig(
+            camera: _isCameraOn,
+            microphone: _isMicOn,
+            echoCancellation: settings.echoCancellation,
+            noiseSuppression: settings.noiseSuppression,
+            autoGainControl: settings.autoGainControl,
+          ),
+        );
+        await _engine!.startPublishing(streamId, _localStream!);
+        _updateLocalParticipant();
+        notifyListeners();
+      } catch (e) {
+        _lastError = e is ZegoError ? e : ZegoError(-1, e.toString());
+        notifyListeners();
+      }
+    } finally {
+      _updatingAudioSettings = false;
+    }
   }
 
   /// Get available cameras.
