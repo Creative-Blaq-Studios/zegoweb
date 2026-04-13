@@ -316,10 +316,11 @@ class ZegoCallController extends ChangeNotifier {
         } catch (_) {}
       }
 
-      // Clear before async gap so stale reference doesn't survive a failure.
+      // Clear before async gap so a stale reference doesn't survive a failure.
+      // Do NOT call _updateLocalParticipant / notifyListeners here — pushing
+      // null to the UI causes the local tile to flash to the avatar and back.
+      // The tile stays on the last video frame until the new stream is ready.
       _localStream = null;
-      _updateLocalParticipant();
-      notifyListeners();
 
       try {
         _localStream = await _engine!.createLocalStream(
