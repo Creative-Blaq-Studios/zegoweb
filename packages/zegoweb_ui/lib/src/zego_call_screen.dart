@@ -30,6 +30,9 @@ class ZegoCallScreen extends StatefulWidget {
     required this.callConfig,
     this.onCallEnded,
     this.onError,
+    this.sidePanel,
+    this.leadingBuilder,
+    this.trailingBuilder,
   });
 
   /// Engine configuration forwarded to [ZegoCallController].
@@ -43,6 +46,15 @@ class ZegoCallScreen extends StatefulWidget {
 
   /// Called when an error occurs during the call lifecycle.
   final void Function(ZegoError error)? onError;
+
+  /// Optional side panel displayed beside the video layout when non-null.
+  final Widget? sidePanel;
+
+  /// Optional widget builder for the left slot of the controls bar.
+  final WidgetBuilder? leadingBuilder;
+
+  /// Optional widget builder for the right slot of the controls bar.
+  final WidgetBuilder? trailingBuilder;
 
   @override
   State<ZegoCallScreen> createState() => _ZegoCallScreenState();
@@ -155,7 +167,14 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
       case ZegoCallState.inCall:
         return Column(
           children: [
-            Expanded(child: _buildLayout()),
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(child: _buildLayout()),
+                  if (widget.sidePanel != null) widget.sidePanel!,
+                ],
+              ),
+            ),
             ZegoControlsBar(
               config: widget.callConfig,
               isMicOn: _controller.isMicOn,
@@ -176,6 +195,8 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
                   _controller.switchCamera(device.deviceId),
               onMicrophoneSelected: (device) =>
                   _controller.switchMicrophone(device.deviceId),
+              leadingBuilder: widget.leadingBuilder,
+              trailingBuilder: widget.trailingBuilder,
             ),
           ],
         );

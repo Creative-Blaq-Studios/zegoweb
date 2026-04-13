@@ -14,7 +14,7 @@ void main() {
       expect(config.showMicrophoneToggle, isTrue);
       expect(config.showCameraToggle, isTrue);
       expect(config.showScreenShareButton, isTrue);
-      expect(config.showDevicePicker, isTrue);
+
       expect(config.showLayoutSwitcher, isTrue);
     });
 
@@ -28,7 +28,7 @@ void main() {
         showMicrophoneToggle: false,
         showCameraToggle: false,
         showScreenShareButton: false,
-        showDevicePicker: false,
+
         showLayoutSwitcher: false,
       );
       expect(config.userName, 'Alice');
@@ -37,7 +37,7 @@ void main() {
       expect(config.showMicrophoneToggle, isFalse);
       expect(config.showCameraToggle, isFalse);
       expect(config.showScreenShareButton, isFalse);
-      expect(config.showDevicePicker, isFalse);
+
       expect(config.showLayoutSwitcher, isFalse);
     });
   });
