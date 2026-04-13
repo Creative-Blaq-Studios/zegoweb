@@ -1,7 +1,11 @@
 // packages/zegoweb/test/audio_level_monitor_test.dart
+@TestOn('chrome')
+library;
+
 import 'dart:typed_data';
 
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:zegoweb/src/audio_level_monitor.dart';
 import 'package:zegoweb/src/audio_level_rms.dart';
 
 void main() {
@@ -33,6 +37,23 @@ void main() {
       final rms = computeAudioRms(moderate);
       expect(rms, greaterThan(0.0));
       expect(rms, lessThan(1.0));
+    });
+  });
+
+  group('ZegoAudioLevelMonitor.levelUpdates', () {
+    test('levelUpdates is a broadcast stream', () {
+      final monitor = ZegoAudioLevelMonitor();
+      expect(monitor.levelUpdates.isBroadcast, isTrue);
+      monitor.dispose();
+    });
+
+    test('levelUpdates allows multiple subscribers without error', () {
+      final monitor = ZegoAudioLevelMonitor();
+      final sub1 = monitor.levelUpdates.listen((_) {});
+      final sub2 = monitor.levelUpdates.listen((_) {});
+      sub1.cancel();
+      sub2.cancel();
+      monitor.dispose();
     });
   });
 }

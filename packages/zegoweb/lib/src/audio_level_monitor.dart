@@ -60,6 +60,12 @@ class ZegoAudioLevelMonitor {
   _AudioCtx? _ctx;
   final Map<String, _Entry> _entries = {};
   final StreamController<String?> _sc = StreamController.broadcast();
+  final StreamController<Map<String, double>> _levelController =
+      StreamController<Map<String, double>>.broadcast();
+
+  /// Emits a snapshot of normalised RMS levels (0.0–1.0) for every registered
+  /// stream, at the 100 ms poll interval. Zero overhead when no subscriber.
+  Stream<Map<String, double>> get levelUpdates => _levelController.stream;
 
   Timer? _pollTimer;
   Timer? _debounceTimer;
@@ -123,15 +129,19 @@ class ZegoAudioLevelMonitor {
 
     String? loudestId;
     double loudestRms = 0;
+    final snapshot = <String, double>{};
 
     for (final kv in _entries.entries) {
       kv.value.analyser.getByteTimeDomainData(kv.value.jsBuffer);
       final rms = computeRms(kv.value.jsBuffer.toDart);
+      snapshot[kv.key] = rms;
       if (rms > _threshold && rms > loudestRms) {
         loudestRms = rms;
         loudestId = kv.key;
       }
     }
+
+    if (!_levelController.isClosed) _levelController.add(snapshot);
 
     if (loudestId == null) {
       // Silence — clear immediately (no debounce on silence).
@@ -191,5 +201,6 @@ class ZegoAudioLevelMonitor {
     } catch (_) {}
     _ctx = null;
     _sc.close();
+    if (!_levelController.isClosed) _levelController.close();
   }
 }
