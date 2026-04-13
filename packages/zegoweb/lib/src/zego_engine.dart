@@ -16,6 +16,7 @@ import 'models/zego_device_info.dart';
 import 'models/zego_enums.dart';
 import 'models/zego_error.dart';
 import 'models/zego_events.dart';
+import 'models/zego_sound_level.dart';
 import 'models/zego_user.dart';
 import 'state_guard.dart';
 import 'token_manager.dart';
@@ -92,6 +93,11 @@ class ZegoEngine with StateGuard {
   Stream<ZegoRoomStreamUpdate> get onRoomStreamUpdate =>
       _streamUpdateController.stream;
 
+  /// Broadcast stream of sound level updates (per-stream volume).
+  /// Only fires after [loginRoom] enables the sound level delegate.
+  Stream<ZegoSoundLevelUpdate> get onSoundLevelUpdate =>
+      _eventBridge.onSoundLevelUpdate;
+
   Future<void> loginRoom(String roomId, ZegoUser user) async {
     requireAlive();
     ZegoLog.info('ZegoEngine.loginRoom room=$roomId user=${user.userId}');
@@ -123,6 +129,13 @@ class ZegoEngine with StateGuard {
       },
       _errorController,
     );
+
+    // Enable periodic sound level events for active speaker detection.
+    try {
+      _js.setSoundLevelDelegate(true, 300);
+    } catch (e) {
+      ZegoLog.warn('setSoundLevelDelegate failed: $e');
+    }
   }
 
   Future<void> logoutRoom([String? roomId]) async {
@@ -134,6 +147,12 @@ class ZegoEngine with StateGuard {
     }
     final targetRoom = roomId ?? current;
     ZegoLog.info('ZegoEngine.logoutRoom room=$targetRoom');
+
+    try {
+      _js.setSoundLevelDelegate(false);
+    } catch (e) {
+      ZegoLog.warn('setSoundLevelDelegate(false) during logout: $e');
+    }
 
     // Auto-stop any publishing / playing streams. All three of these SDK
     // methods are synchronous in 3.12 — no await needed.
@@ -579,6 +598,11 @@ class ZegoEngine with StateGuard {
       } catch (e) {
         ZegoLog.warn('logoutRoom($roomToLeave) during destroy: $e');
       }
+    }
+    try {
+      _js.setSoundLevelDelegate(false);
+    } catch (e) {
+      ZegoLog.warn('setSoundLevelDelegate(false) during destroy: $e');
     }
     try {
       _js.destroyEngine();

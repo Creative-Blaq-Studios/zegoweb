@@ -433,6 +433,11 @@ class FakeZegoJs {
       _record('destroyStream', <JSAny?>[mediaStream]);
     }).toJS;
 
+    // setSoundLevelDelegate(enable, interval?) — SYNC void.
+    obj['setSoundLevelDelegate'] = ((JSBoolean enable, [JSNumber? interval]) {
+      _record('setSoundLevelDelegate', <JSAny?>[enable, interval]);
+    }).toJS;
+
     // destroyEngine() — SYNC void.
     obj['destroyEngine'] = (() {
       _record('destroyEngine', <JSAny?>[]);
