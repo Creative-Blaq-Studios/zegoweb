@@ -42,8 +42,9 @@ class ZegoDevicePopover extends StatelessWidget {
       );
     }
 
-    return Container(
-      constraints: const BoxConstraints(minWidth: 200),
+    return IntrinsicWidth(
+      child: Container(
+      constraints: const BoxConstraints(minWidth: 220),
       decoration: BoxDecoration(
         color: theme.devicePopoverColor,
         borderRadius: BorderRadius.circular(12),
@@ -71,6 +72,7 @@ class ZegoDevicePopover extends StatelessWidget {
           );
         }).toList(),
       ),
+    ),
     );
   }
 }
@@ -103,7 +105,6 @@ class _DeviceItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
               width: 24,
@@ -112,12 +113,9 @@ class _DeviceItem extends StatelessWidget {
                   : null,
             ),
             const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                device.deviceName,
-                style: TextStyle(color: textColor, fontSize: 13),
-                overflow: TextOverflow.ellipsis,
-              ),
+            Text(
+              device.deviceName,
+              style: TextStyle(color: textColor, fontSize: 13),
             ),
           ],
         ),

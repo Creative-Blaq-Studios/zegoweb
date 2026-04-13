@@ -77,16 +77,13 @@ class _ZegoControlPillState extends State<ZegoControlPill> {
               bottom: bottomOffset,
               child: Material(
                 color: Colors.transparent,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 280),
-                  child: ZegoDevicePopover(
-                    devices: widget.devices,
-                    selectedDeviceId: widget.selectedDeviceId,
-                    onDeviceSelected: (device) {
-                      widget.onDeviceSelected(device);
-                      Navigator.of(dialogContext).pop(device);
-                    },
-                  ),
+                child: ZegoDevicePopover(
+                  devices: widget.devices,
+                  selectedDeviceId: widget.selectedDeviceId,
+                  onDeviceSelected: (device) {
+                    widget.onDeviceSelected(device);
+                    Navigator.of(dialogContext).pop(device);
+                  },
                 ),
               ),
             ),
