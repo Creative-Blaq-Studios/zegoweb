@@ -54,7 +54,9 @@ class ZegoSidebarLayout extends StatelessWidget {
       );
     }
 
-    final clampedIndex = activeSpeakerIndex.clamp(0, participants.length - 1);
+    final clampedIndex = activeSpeakerIndex < 0
+        ? 0
+        : activeSpeakerIndex.clamp(0, participants.length - 1);
     final speaker = participants[clampedIndex];
     final sidebarParticipants = [
       ...participants.sublist(0, clampedIndex),
