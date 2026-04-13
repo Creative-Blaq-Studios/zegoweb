@@ -11,7 +11,7 @@ class ZegoCallConfig {
     this.showPreJoinView = true,
     this.showMicrophoneToggle = true,
     this.showCameraToggle = true,
-    this.showScreenShareButton = true,
+    this.showScreenShareButton = false,
     this.showLayoutSwitcher = true,
   });
 
