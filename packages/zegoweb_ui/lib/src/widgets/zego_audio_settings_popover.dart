@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:zegoweb_ui/src/models/zego_audio_settings.dart';
+import 'package:zegoweb_ui/src/zego_call_theme.dart';
 
 /// An overlay popover anchored above the gear button that exposes
 /// AEC / ANS / AGC toggle switches.
@@ -73,6 +74,7 @@ class _ZegoAudioSettingsPopoverState extends State<ZegoAudioSettingsPopover> {
           followerAnchor: Alignment.bottomCenter,
           offset: const Offset(0, -8),
           child: Align(
+            // Prevents the Column from expanding to fill available space.
             alignment: Alignment.topLeft,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -100,15 +102,22 @@ class _PopoverCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = ZegoCallTheme.resolve(
+      Theme.of(context).extension<ZegoCallTheme>(),
+      colorScheme,
+      Theme.of(context).textTheme,
+    );
+
     return Material(
       color: Colors.transparent,
       child: Container(
         width: 220,
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
         decoration: BoxDecoration(
-          color: const Color(0xFF242424),
+          color: theme.devicePopoverColor,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF383838)),
+          border: Border.all(color: colorScheme.outlineVariant),
           boxShadow: const [
             BoxShadow(
               color: Color(0x99000000),
@@ -121,10 +130,10 @@ class _PopoverCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Audio Settings',
               style: TextStyle(
-                color: Colors.white,
+                color: theme.activeControlColor,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
@@ -164,23 +173,36 @@ class _PopoverArrow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = ZegoCallTheme.resolve(
+      Theme.of(context).extension<ZegoCallTheme>(),
+      colorScheme,
+      Theme.of(context).textTheme,
+    );
+
     return CustomPaint(
       size: const Size(8, 8),
-      painter: _DownTrianglePainter(),
+      painter: _DownTrianglePainter(
+        fill: theme.devicePopoverColor!,
+        stroke: colorScheme.outlineVariant,
+      ),
     );
   }
 }
 
 class _DownTrianglePainter extends CustomPainter {
-  const _DownTrianglePainter();
+  const _DownTrianglePainter({required this.fill, required this.stroke});
+
+  final Color fill;
+  final Color stroke;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final fill = Paint()
-      ..color = const Color(0xFF242424)
+    final fillPaint = Paint()
+      ..color = fill
       ..style = PaintingStyle.fill;
-    final stroke = Paint()
-      ..color = const Color(0xFF383838)
+    final strokePaint = Paint()
+      ..color = stroke
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
@@ -197,12 +219,13 @@ class _DownTrianglePainter extends CustomPainter {
       ..lineTo(size.width / 2, size.height)
       ..lineTo(size.width, 0);
 
-    canvas.drawPath(fillPath, fill);
-    canvas.drawPath(strokePath, stroke);
+    canvas.drawPath(fillPath, fillPaint);
+    canvas.drawPath(strokePath, strokePaint);
   }
 
   @override
-  bool shouldRepaint(_DownTrianglePainter old) => false;
+  bool shouldRepaint(_DownTrianglePainter old) =>
+      old.fill != fill || old.stroke != stroke;
 }
 
 // ---------------------------------------------------------------------------
@@ -222,6 +245,13 @@ class _SettingsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = ZegoCallTheme.resolve(
+      Theme.of(context).extension<ZegoCallTheme>(),
+      colorScheme,
+      Theme.of(context).textTheme,
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -232,12 +262,12 @@ class _SettingsRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  style: TextStyle(color: theme.activeControlColor, fontSize: 12),
                 ),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: Color(0xFF666666),
+                  style: TextStyle(
+                    color: theme.inactiveControlColor,
                     fontSize: 10,
                   ),
                 ),
@@ -247,10 +277,10 @@ class _SettingsRow extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: const Color(0xFF4CAF50),
-            activeTrackColor: const Color(0xFF2E7D32),
-            inactiveThumbColor: const Color(0xFF888888),
-            inactiveTrackColor: const Color(0xFF383838),
+            activeThumbColor: colorScheme.primary,
+            activeTrackColor: colorScheme.primaryContainer,
+            inactiveThumbColor: colorScheme.outline,
+            inactiveTrackColor: colorScheme.surfaceContainerHighest,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ],
