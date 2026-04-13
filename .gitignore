@@ -36,3 +36,6 @@ coverage/
 
 # Worktrees
 .worktrees/
+
+# Superpowers brainstorming sessions
+.superpowers/
