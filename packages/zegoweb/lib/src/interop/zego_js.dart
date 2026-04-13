@@ -68,6 +68,10 @@ extension type ZegoExpressEngineJs._(JSObject _) implements JSObject {
   /// `createStream(config?)` → `Promise<MediaStream>`. Async.
   external JSPromise<JSAny?> createStream([JSObject? config]);
 
+  /// `destroyStream(localStream)` → `void`. Stops all tracks on the
+  /// MediaStream, releasing camera/mic hardware. SYNCHRONOUS in 3.12.
+  external void destroyStream(JSObject mediaStream);
+
   /// `startPublishingStream(streamID, mediaStream, options?)` → `boolean`.
   /// SYNCHRONOUS in 3.12 — returns true/false synchronously, NOT a Promise.
   /// Declared as `void` here because the return value is not consumed.

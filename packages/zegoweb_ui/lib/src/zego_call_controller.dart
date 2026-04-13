@@ -191,6 +191,13 @@ class ZegoCallController extends ChangeNotifier {
       }
       _subscriptions.clear();
 
+      // Release camera/mic hardware before destroying the engine.
+      if (_localStream != null) {
+        try {
+          _engine?.destroyLocalStream(_localStream!);
+        } catch (_) {}
+      }
+
       await _engine?.destroy();
       _engine = null;
     } catch (_) {

@@ -428,6 +428,11 @@ class FakeZegoJs {
       return true.toJS;
     }).toJS;
 
+    // destroyStream(mediaStream) — SYNC void.
+    obj['destroyStream'] = ((JSObject mediaStream) {
+      _record('destroyStream', <JSAny?>[mediaStream]);
+    }).toJS;
+
     // destroyEngine() — SYNC void.
     obj['destroyEngine'] = (() {
       _record('destroyEngine', <JSAny?>[]);

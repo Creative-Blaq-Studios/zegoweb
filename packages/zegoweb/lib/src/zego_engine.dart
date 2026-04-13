@@ -371,6 +371,14 @@ class ZegoEngine with StateGuard {
     return _locals.values.last;
   }
 
+  /// Stops all tracks on a local stream, releasing camera/mic hardware.
+  void destroyLocalStream(ZegoLocalStream stream) {
+    requireAlive();
+    ZegoLog.info('ZegoEngine.destroyLocalStream id=${stream.id}');
+    _js.destroyStream(stream.jsStream);
+    _locals.remove(stream.id);
+  }
+
   Future<void> useCamera(String deviceId) async {
     requireAlive();
     final local = _requireLocalStream('useCamera');
@@ -548,6 +556,14 @@ class ZegoEngine with StateGuard {
         _js.stopPublishingStream(id);
       } catch (e) {
         ZegoLog.warn('stopPublishingStream($id) during destroy: $e');
+      }
+    }
+    // Destroy local streams to release camera/mic hardware.
+    for (final local in _locals.values) {
+      try {
+        _js.destroyStream(local.jsStream);
+      } catch (e) {
+        ZegoLog.warn('destroyStream during destroy: $e');
       }
     }
     for (final id in remoteStreamIds) {
