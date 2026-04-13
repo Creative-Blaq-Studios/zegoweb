@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:zegoweb/zegoweb.dart';
 
+import 'package:zegoweb_ui/src/models/zego_audio_settings.dart';
 import 'package:zegoweb_ui/src/zego_call_config.dart';
 import 'package:zegoweb_ui/src/zego_call_state.dart';
 import 'package:zegoweb_ui/src/zego_layout_mode.dart';
@@ -72,6 +73,11 @@ class ZegoCallController extends ChangeNotifier {
 
   /// Index of the active speaker within [participants].
   int get activeSpeakerIndex => _activeSpeakerIndex;
+
+  ZegoAudioSettings _audioSettings = const ZegoAudioSettings();
+
+  /// Current audio processing settings (AEC / ANS / AGC).
+  ZegoAudioSettings get audioSettings => _audioSettings;
 
   // ---------------------------------------------------------------------------
   // Internal
@@ -270,6 +276,40 @@ class ZegoCallController extends ChangeNotifier {
   /// Stop screen sharing.
   Future<void> stopScreenShare() async {
     _isScreenSharing = false;
+    notifyListeners();
+  }
+
+  /// Update AEC / ANS / AGC settings. If a call is in progress the local
+  /// stream is recreated with the new config (brief ~1 s publish interruption).
+  Future<void> updateAudioSettings(ZegoAudioSettings settings) async {
+    if (_audioSettings == settings) return;
+    _audioSettings = settings;
+    notifyListeners();
+
+    if (_state != ZegoCallState.inCall || _engine == null) return;
+
+    final streamId = 'stream-${callConfig.userId}';
+    final oldStream = _localStream;
+    if (oldStream != null) {
+      try {
+        await _engine!.stopPublishing(streamId);
+      } catch (_) {}
+      try {
+        _engine!.destroyLocalStream(oldStream);
+      } catch (_) {}
+    }
+
+    _localStream = await _engine!.createLocalStream(
+      config: ZegoStreamConfig(
+        camera: _isCameraOn,
+        microphone: _isMicOn,
+        echoCancellation: settings.echoCancellation,
+        noiseSuppression: settings.noiseSuppression,
+        autoGainControl: settings.autoGainControl,
+      ),
+    );
+    await _engine!.startPublishing(streamId, _localStream!);
+    _updateLocalParticipant();
     notifyListeners();
   }
 
