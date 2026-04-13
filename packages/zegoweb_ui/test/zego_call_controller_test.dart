@@ -68,5 +68,53 @@ void main() {
     test('is a ChangeNotifier', () {
       expect(controller, isA<ChangeNotifier>());
     });
+
+    group('debug surface', () {
+      test('debugThreshold defaults to 10.0', () {
+        expect(controller.debugThreshold, 10.0);
+      });
+
+      test('debugThreshold setter clamps to 0–100', () {
+        controller.debugThreshold = 25.0;
+        expect(controller.debugThreshold, 25.0);
+
+        controller.debugThreshold = -5.0;
+        expect(controller.debugThreshold, 0.0);
+
+        controller.debugThreshold = 150.0;
+        expect(controller.debugThreshold, 100.0);
+      });
+
+      test('debugThreshold setter notifies listeners', () {
+        var notified = false;
+        controller.addListener(() => notified = true);
+        controller.debugThreshold = 20.0;
+        expect(notified, isTrue);
+      });
+
+      test('debugDebounce defaults to 500 ms', () {
+        expect(controller.debugDebounce, const Duration(milliseconds: 500));
+      });
+
+      test('debugDebounce setter stores value', () {
+        controller.debugDebounce = const Duration(milliseconds: 800);
+        expect(controller.debugDebounce, const Duration(milliseconds: 800));
+      });
+
+      test('debugLog is a broadcast stream', () {
+        expect(controller.debugLog.isBroadcast, isTrue);
+      });
+
+      test('debugLog allows multiple subscribers', () {
+        final sub1 = controller.debugLog.listen((_) {});
+        final sub2 = controller.debugLog.listen((_) {});
+        sub1.cancel();
+        sub2.cancel();
+      });
+
+      test('debugMicLevel returns a stream', () {
+        expect(controller.debugMicLevel, isA<Stream<double>>());
+      });
+    });
   });
 }

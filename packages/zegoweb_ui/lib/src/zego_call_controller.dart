@@ -85,9 +85,50 @@ class ZegoCallController extends ChangeNotifier {
   // Internal
   // ---------------------------------------------------------------------------
 
+  // Active speaker debounce — prevents rapid switching when sound levels
+  // fluctuate briefly. A new candidate must hold the loudest position for
+  // 500 ms before becoming the active speaker.
+  Timer? _activeSpeakerDebounceTimer;
+  String? _activeSpeakerCandidate;
+
+  double _debugThreshold = 10.0; // 0–100 ZEGO scale
+  Duration _debugDebounce = const Duration(milliseconds: 500);
+
+  /// The sound-level threshold (0–100 ZEGO scale) a stream must exceed before
+  /// it's considered a speaker candidate. Adjust at runtime via the debug panel.
+  double get debugThreshold => _debugThreshold;
+  set debugThreshold(double v) {
+    _debugThreshold = v.clamp(0.0, 100.0);
+    notifyListeners();
+  }
+
+  /// The debounce window a candidate must hold before becoming the active
+  /// speaker. Adjust at runtime via the debug panel.
+  Duration get debugDebounce => _debugDebounce;
+  set debugDebounce(Duration v) => _debugDebounce = v;
+
   ZegoEngine? _engine;
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   final Map<String, ZegoRemoteStream> _remoteStreams = {};
+
+  final StreamController<String> _debugLogController =
+      StreamController<String>.broadcast();
+
+  /// Broadcast stream of debug log lines. Only emits when
+  /// [callConfig.debugMode] is true.
+  Stream<String> get debugLog => _debugLogController.stream;
+
+  void _debugEmit(String line) {
+    if (!callConfig.debugMode) return;
+    debugPrint('[ZegoDebug] $line');
+    if (!_debugLogController.isClosed) _debugLogController.add(line);
+  }
+
+  /// Raw local mic level stream (0.0–1.0) from Web Audio API, 100 ms interval.
+  /// Available from [startPreview] onwards. Returns [Stream.empty] when the
+  /// engine has not yet been created.
+  Stream<double> get debugMicLevel =>
+      _engine?.debugLocalMicLevel ?? Stream.empty();
 
   List<ZegoDeviceInfo> _cameras = [];
   List<ZegoDeviceInfo> get cameras => _cameras;
@@ -156,7 +197,7 @@ class ZegoCallController extends ChangeNotifier {
       ]);
 
       _subscriptions.add(
-        _engine!.onActiveSpeakerChanged.listen(_onActiveSpeakerChanged),
+        _engine!.onSoundLevelUpdate.listen(_onSoundLevelUpdate),
       );
       _subscriptions.add(
         _engine!.onRemoteCameraStatusUpdate.listen(_onRemoteCameraStatusUpdate),
@@ -234,6 +275,10 @@ class ZegoCallController extends ChangeNotifier {
       // Best-effort teardown.
     }
 
+    _activeSpeakerDebounceTimer?.cancel();
+    _activeSpeakerDebounceTimer = null;
+    _activeSpeakerCandidate = null;
+
     _localStream = null;
     _participants.clear();
     _remoteStreams.clear();
@@ -293,8 +338,8 @@ class ZegoCallController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Update AEC / ANS / AGC settings. If a call is in progress the local
-  /// stream is recreated with the new config.
+  /// Update AEC / ANS / AGC settings. Applies constraints directly to the
+  /// existing audio track — no stream recreation, no camera interruption.
   Future<void> updateAudioSettings(ZegoAudioSettings settings) async {
     if (_audioSettings == settings) return;
     if (_updatingAudioSettings) return;
@@ -303,48 +348,15 @@ class ZegoCallController extends ChangeNotifier {
       _audioSettings = settings;
       notifyListeners();
 
-      if (_state != ZegoCallState.inCall || _engine == null) return;
+      if (_state != ZegoCallState.inCall || _engine == null || _localStream == null) return;
 
-      final streamId = 'stream-${callConfig.userId}';
-      final oldStream = _localStream;
-
-      // Create the new stream BEFORE tearing down the old one — the camera
-      // stays live and the video tile switches without going dark.
-      ZegoLocalStream newStream;
       try {
-        newStream = await _engine!.createLocalStream(
-          config: ZegoStreamConfig(
-            camera: _isCameraOn,
-            microphone: _isMicOn,
-            echoCancellation: settings.echoCancellation,
-            noiseSuppression: settings.noiseSuppression,
-            autoGainControl: settings.autoGainControl,
-          ),
+        await _engine!.applyAudioConstraints(
+          _localStream!,
+          echoCancellation: settings.echoCancellation,
+          noiseSuppression: settings.noiseSuppression,
+          autoGainControl: settings.autoGainControl,
         );
-      } catch (e) {
-        _lastError = e is ZegoError ? e : ZegoError(-1, e.toString());
-        notifyListeners();
-        return;
-      }
-
-      // Swap the UI reference atomically — tile shows new stream immediately.
-      _localStream = newStream;
-      _updateLocalParticipant();
-      notifyListeners();
-
-      // Tear down the old stream now that the UI has moved on.
-      if (oldStream != null) {
-        try {
-          await _engine!.stopPublishing(streamId);
-        } catch (_) {}
-        try {
-          _engine!.destroyLocalStream(oldStream);
-        } catch (_) {}
-      }
-
-      // Republish under the same stream ID with the new stream.
-      try {
-        await _engine!.startPublishing(streamId, newStream);
       } catch (e) {
         _lastError = e is ZegoError ? e : ZegoError(-1, e.toString());
         notifyListeners();
@@ -440,10 +452,68 @@ class ZegoCallController extends ChangeNotifier {
     }
   }
 
-  void _onActiveSpeakerChanged(String? streamId) {
+  void _onSoundLevelUpdate(ZegoSoundLevelUpdate update) {
+    // Find the loudest stream above threshold.
+    ZegoSoundLevelInfo? loudest;
+    for (final info in update.levels) {
+      if (info.soundLevel >= _debugThreshold) {
+        if (loudest == null || info.soundLevel > loudest.soundLevel) {
+          loudest = info;
+        }
+      }
+    }
+
+    final candidateId = loudest?.streamId;
+
+    if (candidateId == null) {
+      _debugEmit(
+        '${update.levels.map((l) => '${l.streamId.split("-").last}:${l.soundLevel.toStringAsFixed(1)}').join(" | ")} → silence',
+      );
+      // Silence — clear immediately, no debounce.
+      _activeSpeakerDebounceTimer?.cancel();
+      _activeSpeakerDebounceTimer = null;
+      _activeSpeakerCandidate = null;
+      _applyActiveSpeaker(null);
+      return;
+    }
+
+    _debugEmit(
+      'loudest: ${candidateId.split("-").last} @ ${loudest!.soundLevel.toStringAsFixed(1)} (thr $_debugThreshold)',
+    );
+
+    if (candidateId == _activeSpeakerCandidate) return; // already debouncing
+
+    // Same as current active speaker — cancel pending switch.
+    final candidateIndex = _participantIndexForStream(candidateId);
+    if (candidateIndex == _activeSpeakerIndex && _activeSpeakerIndex >= 0) {
+      _activeSpeakerDebounceTimer?.cancel();
+      _activeSpeakerDebounceTimer = null;
+      _activeSpeakerCandidate = null;
+      return;
+    }
+
+    // New candidate — start debounce.
+    _activeSpeakerDebounceTimer?.cancel();
+    _activeSpeakerCandidate = candidateId;
+    _debugEmit('⏱ debounce → ${candidateId.split("-").last}');
+    _activeSpeakerDebounceTimer = Timer(_debugDebounce, () {
+      if (_activeSpeakerCandidate != null) {
+        final sid = _activeSpeakerCandidate!;
+        _activeSpeakerCandidate = null;
+        _applyActiveSpeaker(sid);
+      }
+    });
+  }
+
+  void _applyActiveSpeaker(String? streamId) {
     final newIndex = streamId == null ? -1 : _participantIndexForStream(streamId);
     if (newIndex == _activeSpeakerIndex) return;
     _activeSpeakerIndex = newIndex;
+    if (streamId == null) {
+      _debugEmit('★ cleared (silence)');
+    } else {
+      _debugEmit('★ active speaker → idx $newIndex (${streamId.split("-").last})');
+    }
     notifyListeners();
   }
 
@@ -481,9 +551,8 @@ class ZegoCallController extends ChangeNotifier {
 
   @override
   void dispose() {
-    if (_state != ZegoCallState.idle) {
-      leave();
-    }
+    _debugLogController.close(); // broadcast; safe even with no subscribers
+    if (_state != ZegoCallState.idle) leave();
     super.dispose();
   }
 }
