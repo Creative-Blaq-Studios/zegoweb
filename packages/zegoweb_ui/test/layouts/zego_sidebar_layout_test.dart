@@ -72,5 +72,17 @@ void main() {
 
       expect(find.byType(ZegoParticipantTile), findsNothing);
     });
+
+    testWidgets('renders all tiles when activeSpeakerIndex is -1 (no active speaker)', (tester) async {
+      final participants = _participants(3);
+      await tester.pumpWidget(_wrap(
+        ZegoSidebarLayout(
+          participants: participants,
+          activeSpeakerIndex: -1,
+        ),
+      ));
+
+      expect(find.byType(ZegoParticipantTile), findsNWidgets(3));
+    });
   });
 }
