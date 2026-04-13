@@ -50,7 +50,7 @@ class ZegoCallTheme extends ThemeExtension<ZegoCallTheme> {
           extension?.activeControlColor ?? colorScheme.onSurface,
       inactiveControlColor:
           extension?.inactiveControlColor ?? colorScheme.onSurfaceVariant,
-      hangUpColor: extension?.hangUpColor ?? colorScheme.error,
+      hangUpColor: extension?.hangUpColor ?? const Color(0xFFEA4335),
       controlPillColor:
           extension?.controlPillColor ?? colorScheme.surfaceContainerHighest,
       controlPillMutedColor:
