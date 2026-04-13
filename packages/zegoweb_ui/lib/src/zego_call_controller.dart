@@ -85,14 +85,33 @@ class ZegoCallController extends ChangeNotifier {
   // Actions
   // ---------------------------------------------------------------------------
 
-  /// Join the call: create engine, login room, publish local stream.
+  /// Initialize the engine and create a local stream for pre-join preview.
+  /// Does NOT join the room — call [join] for that.
+  Future<void> startPreview() async {
+    if (_engine != null) return; // already initialized
+    _setState(ZegoCallState.preJoin);
+
+    try {
+      await ZegoWeb.loadScript();
+      _engine = await ZegoWeb.createEngine(engineConfig);
+      _localStream = await _engine!.createLocalStream();
+      notifyListeners();
+    } catch (e) {
+      _lastError = e is ZegoError ? e : ZegoError(-1, e.toString());
+      notifyListeners();
+    }
+  }
+
+  /// Join the call: create engine (if needed), login room, publish local stream.
   Future<void> join() async {
     if (_state != ZegoCallState.idle && _state != ZegoCallState.preJoin) return;
     _setState(ZegoCallState.joining);
 
     try {
-      await ZegoWeb.loadScript();
-      _engine = await ZegoWeb.createEngine(engineConfig);
+      if (_engine == null) {
+        await ZegoWeb.loadScript();
+        _engine = await ZegoWeb.createEngine(engineConfig);
+      }
 
       _subscriptions.addAll([
         _engine!.onRoomStreamUpdate.listen(_onRoomStreamUpdate),
@@ -108,7 +127,7 @@ class ZegoCallController extends ChangeNotifier {
         ),
       );
 
-      _localStream = await _engine!.createLocalStream();
+      _localStream ??= await _engine!.createLocalStream();
       final streamId = 'stream-${callConfig.userId}';
       await _engine!.startPublishing(streamId, _localStream!);
 

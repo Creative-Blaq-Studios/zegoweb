@@ -60,7 +60,9 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
     );
     _controller.addListener(_onControllerChanged);
 
-    if (!widget.callConfig.showPreJoinView) {
+    if (widget.callConfig.showPreJoinView) {
+      _controller.startPreview();
+    } else {
       _controller.join().catchError((_) {});
     }
   }
@@ -127,6 +129,12 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
           return ZegoPreJoinView(
             userName: widget.callConfig.userName ?? widget.callConfig.userId,
             onJoin: _handleJoin,
+            previewWidget: _controller.localStream != null
+                ? ZegoVideoView(
+                    stream: _controller.localStream!,
+                    mirror: true,
+                  )
+                : null,
           );
         }
         return const Center(child: CircularProgressIndicator());
@@ -160,22 +168,33 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
     }
   }
 
+  Widget _videoViewBuilder(Object stream, bool mirror) {
+    return ZegoVideoView(stream: stream, mirror: mirror);
+  }
+
   Widget _buildLayout() {
     final participants = _controller.participants;
 
     switch (_controller.currentLayout) {
       case ZegoLayoutMode.grid:
-        return ZegoGridLayout(participants: participants);
+        return ZegoGridLayout(
+          participants: participants,
+          videoViewBuilder: _videoViewBuilder,
+        );
 
       case ZegoLayoutMode.sidebar:
         return ZegoSidebarLayout(
           participants: participants,
           activeSpeakerIndex: _controller.activeSpeakerIndex,
+          videoViewBuilder: _videoViewBuilder,
         );
 
       case ZegoLayoutMode.pip:
         if (participants.length < 2) {
-          return ZegoGridLayout(participants: participants);
+          return ZegoGridLayout(
+            participants: participants,
+            videoViewBuilder: _videoViewBuilder,
+          );
         }
         final local = participants.firstWhere(
           (p) => p.isLocal,
@@ -188,6 +207,7 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
         return ZegoPipLayout(
           fullScreenParticipant: remote,
           floatingParticipant: local,
+          videoViewBuilder: _videoViewBuilder,
         );
     }
   }

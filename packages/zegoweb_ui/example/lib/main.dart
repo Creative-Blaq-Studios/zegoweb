@@ -37,7 +37,7 @@ class SetupScreen extends StatefulWidget {
 
 class _SetupScreenState extends State<SetupScreen> {
   final _appIdCtrl = TextEditingController();
-  final _secretCtrl = TextEditingController();
+  final _tokenCtrl = TextEditingController();
   final _roomCtrl = TextEditingController(text: 'demo-room');
   final _userIdCtrl = TextEditingController(text: 'user-1');
   final _userNameCtrl = TextEditingController(text: 'Alice');
@@ -54,7 +54,7 @@ class _SetupScreenState extends State<SetupScreen> {
             appId: appId,
             server: 'wss://webliveroom-api.zego.im/ws',
             scenario: ZegoScenario.communication,
-            tokenProvider: () async => '',
+            tokenProvider: () async => _tokenCtrl.text,
           ),
           callConfig: ZegoCallConfig(
             roomId: _roomCtrl.text,
@@ -75,7 +75,7 @@ class _SetupScreenState extends State<SetupScreen> {
   @override
   void dispose() {
     _appIdCtrl.dispose();
-    _secretCtrl.dispose();
+    _tokenCtrl.dispose();
     _roomCtrl.dispose();
     _userIdCtrl.dispose();
     _userNameCtrl.dispose();
@@ -95,8 +95,8 @@ class _SetupScreenState extends State<SetupScreen> {
               decoration: const InputDecoration(labelText: 'App ID'),
             ),
             TextField(
-              controller: _secretCtrl,
-              decoration: const InputDecoration(labelText: 'Server Secret'),
+              controller: _tokenCtrl,
+              decoration: const InputDecoration(labelText: 'Token'),
             ),
             TextField(
               controller: _roomCtrl,
