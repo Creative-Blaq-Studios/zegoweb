@@ -7,6 +7,7 @@ import 'package:meta/meta.dart';
 
 import 'package:web/web.dart' as web;
 
+import 'audio_level_monitor.dart';
 import 'interop/event_bridge.dart';
 import 'interop/promise_adapter.dart';
 import 'interop/zego_js.dart';
@@ -70,6 +71,11 @@ class ZegoEngine with StateGuard {
   final List<StreamSubscription<dynamic>> _bridgeSubs =
       <StreamSubscription<dynamic>>[];
 
+  ZegoAudioLevelMonitor? _monitor;
+
+  ZegoAudioLevelMonitor get _monitorInstance =>
+      _monitor ??= ZegoAudioLevelMonitor();
+
   final StreamController<ZegoError> _errorController =
       StreamController<ZegoError>.broadcast();
   final StreamController<ZegoRoomState> _roomStateController =
@@ -97,6 +103,21 @@ class ZegoEngine with StateGuard {
   /// Only fires after [loginRoom] enables the sound level delegate.
   Stream<ZegoSoundLevelUpdate> get onSoundLevelUpdate =>
       _eventBridge.onSoundLevelUpdate;
+
+  /// Fires when a remote participant enables or disables their camera.
+  /// [ZegoRemoteDeviceUpdate.isActive] is `true` when the camera is open.
+  Stream<ZegoRemoteDeviceUpdate> get onRemoteCameraStatusUpdate =>
+      _eventBridge.onRemoteCameraStatusUpdate;
+
+  /// Fires when a remote participant mutes or unmutes their microphone.
+  /// [ZegoRemoteDeviceUpdate.isActive] is `true` when the mic is open.
+  Stream<ZegoRemoteDeviceUpdate> get onRemoteMicStatusUpdate =>
+      _eventBridge.onRemoteMicStatusUpdate;
+
+  /// Emits the loudest speaker's stream ID (debounced 500 ms), or null for
+  /// silence. Measured via the Web Audio API on all registered streams.
+  Stream<String?> get onActiveSpeakerChanged =>
+      _monitorInstance.onActiveSpeakerChanged;
 
   Future<void> loginRoom(String roomId, ZegoUser user) async {
     requireAlive();
@@ -129,13 +150,6 @@ class ZegoEngine with StateGuard {
       },
       _errorController,
     );
-
-    // Enable periodic sound level events for active speaker detection.
-    try {
-      _js.setSoundLevelDelegate(true, 300);
-    } catch (e) {
-      ZegoLog.warn('setSoundLevelDelegate failed: $e');
-    }
   }
 
   Future<void> logoutRoom([String? roomId]) async {
@@ -147,12 +161,6 @@ class ZegoEngine with StateGuard {
     }
     final targetRoom = roomId ?? current;
     ZegoLog.info('ZegoEngine.logoutRoom room=$targetRoom');
-
-    try {
-      _js.setSoundLevelDelegate(false);
-    } catch (e) {
-      ZegoLog.warn('setSoundLevelDelegate(false) during logout: $e');
-    }
 
     // Auto-stop any publishing / playing streams. All three of these SDK
     // methods are synchronous in 3.12 — no await needed.
@@ -201,6 +209,7 @@ class ZegoEngine with StateGuard {
         'local-${DateTime.now().microsecondsSinceEpoch}';
     final handle = zegoLocalStreamInternal(streamId, jsStream);
     _locals[streamId] = handle;
+    _monitorInstance.addStream(streamId, jsStream);
     return handle;
   }
 
@@ -327,6 +336,7 @@ class ZegoEngine with StateGuard {
     }
     final handle = zegoRemoteStreamInternal(streamId, jsStream);
     _remotes[streamId] = handle;
+    _monitorInstance.addStream(streamId, jsStream);
     return handle;
   }
 
@@ -344,6 +354,7 @@ class ZegoEngine with StateGuard {
       );
     } finally {
       _remotes.remove(streamId);
+      _monitor?.removeStream(streamId);
     }
   }
 
@@ -396,6 +407,7 @@ class ZegoEngine with StateGuard {
     ZegoLog.info('ZegoEngine.destroyLocalStream id=${stream.id}');
     _js.destroyStream(stream.jsStream);
     _locals.remove(stream.id);
+    _monitor?.removeStream(stream.id);
   }
 
   Future<void> useCamera(String deviceId) async {
@@ -600,11 +612,6 @@ class ZegoEngine with StateGuard {
       }
     }
     try {
-      _js.setSoundLevelDelegate(false);
-    } catch (e) {
-      ZegoLog.warn('setSoundLevelDelegate(false) during destroy: $e');
-    }
-    try {
       _js.destroyEngine();
     } catch (e) {
       ZegoLog.warn('destroyEngine during destroy: $e');
@@ -616,6 +623,8 @@ class ZegoEngine with StateGuard {
     }
     _bridgeSubs.clear();
     _tokenManager.dispose();
+    _monitor?.dispose();
+    _monitor = null;
     await _eventBridge.dispose();
 
     _locals.clear();
