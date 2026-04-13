@@ -294,19 +294,45 @@ class ZegoCallController extends ChangeNotifier {
   }
 
   /// Update AEC / ANS / AGC settings. If a call is in progress the local
-  /// stream is recreated with the new config (brief ~1 s publish interruption).
+  /// stream is recreated with the new config.
   Future<void> updateAudioSettings(ZegoAudioSettings settings) async {
     if (_audioSettings == settings) return;
-    _audioSettings = settings;
-    notifyListeners();
-
-    if (_state != ZegoCallState.inCall || _engine == null) return;
-
     if (_updatingAudioSettings) return;
     _updatingAudioSettings = true;
     try {
+      _audioSettings = settings;
+      notifyListeners();
+
+      if (_state != ZegoCallState.inCall || _engine == null) return;
+
       final streamId = 'stream-${callConfig.userId}';
       final oldStream = _localStream;
+
+      // Create the new stream BEFORE tearing down the old one — the camera
+      // stays live and the video tile switches without going dark.
+      ZegoLocalStream newStream;
+      try {
+        newStream = await _engine!.createLocalStream(
+          config: ZegoStreamConfig(
+            camera: _isCameraOn,
+            microphone: _isMicOn,
+            echoCancellation: settings.echoCancellation,
+            noiseSuppression: settings.noiseSuppression,
+            autoGainControl: settings.autoGainControl,
+          ),
+        );
+      } catch (e) {
+        _lastError = e is ZegoError ? e : ZegoError(-1, e.toString());
+        notifyListeners();
+        return;
+      }
+
+      // Swap the UI reference atomically — tile shows new stream immediately.
+      _localStream = newStream;
+      _updateLocalParticipant();
+      notifyListeners();
+
+      // Tear down the old stream now that the UI has moved on.
       if (oldStream != null) {
         try {
           await _engine!.stopPublishing(streamId);
@@ -316,25 +342,9 @@ class ZegoCallController extends ChangeNotifier {
         } catch (_) {}
       }
 
-      // Clear before async gap so a stale reference doesn't survive a failure.
-      // Do NOT call _updateLocalParticipant / notifyListeners here — pushing
-      // null to the UI causes the local tile to flash to the avatar and back.
-      // The tile stays on the last video frame until the new stream is ready.
-      _localStream = null;
-
+      // Republish under the same stream ID with the new stream.
       try {
-        _localStream = await _engine!.createLocalStream(
-          config: ZegoStreamConfig(
-            camera: _isCameraOn,
-            microphone: _isMicOn,
-            echoCancellation: settings.echoCancellation,
-            noiseSuppression: settings.noiseSuppression,
-            autoGainControl: settings.autoGainControl,
-          ),
-        );
-        await _engine!.startPublishing(streamId, _localStream!);
-        _updateLocalParticipant();
-        notifyListeners();
+        await _engine!.startPublishing(streamId, newStream);
       } catch (e) {
         _lastError = e is ZegoError ? e : ZegoError(-1, e.toString());
         notifyListeners();
