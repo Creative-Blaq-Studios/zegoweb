@@ -52,6 +52,7 @@ class _Entry {
 /// Owned by [ZegoEngine]. Do not instantiate directly.
 class ZegoAudioLevelMonitor {
   static const int _fftSize = 256;
+  static const int _bufferSize = _fftSize ~/ 2; // frequencyBinCount = fftSize/2
   static const double _threshold = 0.02; // normalised RMS 0.0-1.0
   static const Duration _pollInterval = Duration(milliseconds: 100);
   static const Duration _debounce = Duration(milliseconds: 500);
@@ -71,17 +72,19 @@ class ZegoAudioLevelMonitor {
 
   /// Register a MediaStream JS object for level monitoring.
   void addStream(String streamId, JSObject jsMediaStream) {
+    if (_sc.isClosed) return; // already disposed
     if (_entries.containsKey(streamId)) return;
 
     _ctx ??= _AudioCtx();
-    _ctx!.resume(); // resume if browser suspended the context
+    _ctx!.resume(); // Fire-and-forget: context is likely already running after user gesture.
+                    // Making addStream async would be a breaking API change.
 
     final source = _ctx!.createMediaStreamSource(jsMediaStream);
     final analyser = _ctx!.createAnalyser();
     analyser.fftSize = _fftSize;
     source.connect(analyser);
 
-    final jsBuffer = Uint8List(_fftSize).toJS;
+    final jsBuffer = Uint8List(_bufferSize).toJS;
     _entries[streamId] = _Entry(source, analyser, jsBuffer);
 
     _pollTimer ??= Timer.periodic(_pollInterval, _poll);
