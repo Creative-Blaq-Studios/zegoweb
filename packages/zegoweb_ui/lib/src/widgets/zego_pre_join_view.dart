@@ -79,7 +79,7 @@ class _ZegoPreJoinViewState extends State<ZegoPreJoinView> {
       color: theme.backgroundColor,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960, maxHeight: 560),
+          constraints: const BoxConstraints(maxWidth: 1440, maxHeight: 560),
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Row(
@@ -92,73 +92,74 @@ class _ZegoPreJoinViewState extends State<ZegoPreJoinView> {
                       // Preview card — 16:9 aspect ratio
                       Flexible(
                         child: AspectRatio(
-                        aspectRatio: 16 / 9,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(
-                            theme.tileBorderRadius ?? 12.0,
-                          ),
-                          child: Container(
-                            color: const Color(0xFF0f0f1a),
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                // Video preview or camera-off placeholder
-                                if (widget.isCameraOn &&
-                                    widget.previewWidget != null)
-                                  widget.previewWidget!
-                                else
-                                  Center(
-                                    child: _Avatar(
-                                      name: widget.userName,
-                                      colorScheme: colorScheme,
+                          aspectRatio: 16 / 9,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(
+                              theme.tileBorderRadius ?? 12.0,
+                            ),
+                            child: Container(
+                              color: theme.tileBackgroundColor ?? colorScheme.surfaceContainerHighest,
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  // Video preview or camera-off placeholder
+                                  if (widget.isCameraOn &&
+                                      widget.previewWidget != null)
+                                    widget.previewWidget!
+                                  else
+                                    Center(
+                                      child: _Avatar(
+                                        name: widget.userName,
+                                        colorScheme: colorScheme,
+                                      ),
+                                    ),
+
+                                  // User name — top left
+                                  Positioned(
+                                    top: 12,
+                                    left: 14,
+                                    child: Text(
+                                      widget.userName,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
 
-                                // User name — top left
-                                Positioned(
-                                  top: 12,
-                                  left: 14,
-                                  child: Text(
-                                    widget.userName,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
+                                  // Mic + Camera toggles — bottom center
+                                  Positioned(
+                                    bottom: 14,
+                                    left: 0,
+                                    right: 0,
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        _ToggleCircle(
+                                          icon: widget.isMicOn
+                                              ? Icons.mic
+                                              : Icons.mic_off,
+                                          isOn: widget.isMicOn,
+                                          onTap: widget.onToggleMic,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        _ToggleCircle(
+                                          icon: widget.isCameraOn
+                                              ? Icons.videocam
+                                              : Icons.videocam_off,
+                                          isOn: widget.isCameraOn,
+                                          onTap: widget.onToggleCamera,
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ),
-
-                                // Mic + Camera toggles — bottom center
-                                Positioned(
-                                  bottom: 14,
-                                  left: 0,
-                                  right: 0,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      _ToggleCircle(
-                                        icon: widget.isMicOn
-                                            ? Icons.mic
-                                            : Icons.mic_off,
-                                        isOn: widget.isMicOn,
-                                        onTap: widget.onToggleMic,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      _ToggleCircle(
-                                        icon: widget.isCameraOn
-                                            ? Icons.videocam
-                                            : Icons.videocam_off,
-                                        isOn: widget.isCameraOn,
-                                        onTap: widget.onToggleCamera,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
                       ),
 
                       const SizedBox(height: 12),
@@ -181,8 +182,8 @@ class _ZegoPreJoinViewState extends State<ZegoPreJoinView> {
                           const SizedBox(width: 8),
                           _DeviceChip(
                             icon: Icons.videocam,
-                            label: _deviceLabel(
-                                widget.cameras, _selectedCameraId),
+                            label:
+                                _deviceLabel(widget.cameras, _selectedCameraId),
                             devices: widget.cameras,
                             selectedId: _selectedCameraId,
                             onSelected: (id) {
@@ -200,7 +201,7 @@ class _ZegoPreJoinViewState extends State<ZegoPreJoinView> {
 
                 // ---- Right: Join panel ----
                 Expanded(
-                  flex: 2,
+                  flex: 1,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -333,10 +334,11 @@ class _DeviceChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return PopupMenuButton<String>(
       onSelected: onSelected,
       initialValue: selectedId,
-      color: const Color(0xFF2a2a4a),
+      color: cs.surfaceContainerHigh,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       itemBuilder: (_) => devices
           .map((d) => PopupMenuItem<String>(
@@ -344,7 +346,7 @@ class _DeviceChip extends StatelessWidget {
                 child: Row(
                   children: [
                     if (d.deviceId == selectedId)
-                      const Icon(Icons.check, size: 16, color: Colors.white70)
+                      Icon(Icons.check, size: 16, color: cs.primary)
                     else
                       const SizedBox(width: 16),
                     const SizedBox(width: 8),
@@ -353,8 +355,8 @@ class _DeviceChip extends StatelessWidget {
                         d.deviceName,
                         style: TextStyle(
                           color: d.deviceId == selectedId
-                              ? Colors.white
-                              : Colors.white70,
+                              ? cs.onSurface
+                              : cs.onSurfaceVariant,
                           fontSize: 13,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -367,20 +369,20 @@ class _DeviceChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF2a2a4a),
+          color: cs.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: Colors.white70),
+            Icon(icon, size: 14, color: cs.onSurfaceVariant),
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
             ),
             const SizedBox(width: 4),
-            const Icon(Icons.arrow_drop_down, size: 16, color: Colors.white54),
+            Icon(Icons.arrow_drop_down, size: 16, color: cs.onSurfaceVariant),
           ],
         ),
       ),
