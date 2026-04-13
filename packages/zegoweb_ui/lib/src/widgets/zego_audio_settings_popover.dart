@@ -184,14 +184,21 @@ class _DownTrianglePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
-    final path = Path()
+    final fillPath = Path()
       ..moveTo(0, 0)
       ..lineTo(size.width, 0)
       ..lineTo(size.width / 2, size.height)
       ..close();
 
-    canvas.drawPath(path, fill);
-    canvas.drawPath(path, stroke);
+    // Stroke only the two diagonal sides — not the top edge — so there is no
+    // visible seam between the card border and the triangle.
+    final strokePath = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..lineTo(size.width, 0);
+
+    canvas.drawPath(fillPath, fill);
+    canvas.drawPath(strokePath, stroke);
   }
 
   @override
@@ -241,6 +248,7 @@ class _SettingsRow extends StatelessWidget {
             value: value,
             onChanged: onChanged,
             activeThumbColor: const Color(0xFF4CAF50),
+            activeTrackColor: const Color(0xFF2E7D32),
             inactiveThumbColor: const Color(0xFF888888),
             inactiveTrackColor: const Color(0xFF383838),
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
