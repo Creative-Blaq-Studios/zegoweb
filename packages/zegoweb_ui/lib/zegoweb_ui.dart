@@ -30,4 +30,8 @@ export 'src/layouts/zego_pip_layout.dart' show ZegoPipLayout;
 // Widgets (composable)
 export 'src/widgets/zego_participant_tile.dart' show ZegoParticipantTile;
 export 'src/widgets/zego_controls_bar.dart' show ZegoControlsBar;
+export 'src/widgets/zego_control_pill.dart' show ZegoControlPill;
+export 'src/widgets/zego_control_circle.dart' show ZegoControlCircle;
+export 'src/widgets/zego_hang_up_button.dart' show ZegoHangUpButton;
+export 'src/widgets/zego_device_popover.dart' show ZegoDevicePopover;
 export 'src/widgets/zego_pre_join_view.dart' show ZegoPreJoinView;
