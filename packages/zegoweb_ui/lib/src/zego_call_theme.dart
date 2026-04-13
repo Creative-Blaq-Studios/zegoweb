@@ -10,6 +10,11 @@ class ZegoCallTheme extends ThemeExtension<ZegoCallTheme> {
     this.activeControlColor,
     this.inactiveControlColor,
     this.hangUpColor,
+    this.controlPillColor,
+    this.controlPillMutedColor,
+    this.controlCircleColor,
+    this.controlMutedIconColor,
+    this.devicePopoverColor,
     this.nameTextStyle,
     this.micIndicatorColor,
   });
@@ -21,6 +26,11 @@ class ZegoCallTheme extends ThemeExtension<ZegoCallTheme> {
   final Color? activeControlColor;
   final Color? inactiveControlColor;
   final Color? hangUpColor;
+  final Color? controlPillColor;
+  final Color? controlPillMutedColor;
+  final Color? controlCircleColor;
+  final Color? controlMutedIconColor;
+  final Color? devicePopoverColor;
   final TextStyle? nameTextStyle;
   final Color? micIndicatorColor;
 
@@ -41,6 +51,16 @@ class ZegoCallTheme extends ThemeExtension<ZegoCallTheme> {
       inactiveControlColor:
           extension?.inactiveControlColor ?? colorScheme.onSurfaceVariant,
       hangUpColor: extension?.hangUpColor ?? colorScheme.error,
+      controlPillColor:
+          extension?.controlPillColor ?? colorScheme.surfaceContainerHighest,
+      controlPillMutedColor:
+          extension?.controlPillMutedColor ?? const Color(0x40EA4335),
+      controlCircleColor:
+          extension?.controlCircleColor ?? colorScheme.surfaceContainerHighest,
+      controlMutedIconColor:
+          extension?.controlMutedIconColor ?? const Color(0xFFF28B82),
+      devicePopoverColor:
+          extension?.devicePopoverColor ?? colorScheme.surfaceContainerHigh,
       nameTextStyle: extension?.nameTextStyle ??
           textTheme.labelSmall?.copyWith(color: colorScheme.onSurface),
       micIndicatorColor: extension?.micIndicatorColor ?? colorScheme.primary,
@@ -56,6 +76,11 @@ class ZegoCallTheme extends ThemeExtension<ZegoCallTheme> {
     Color? activeControlColor,
     Color? inactiveControlColor,
     Color? hangUpColor,
+    Color? controlPillColor,
+    Color? controlPillMutedColor,
+    Color? controlCircleColor,
+    Color? controlMutedIconColor,
+    Color? devicePopoverColor,
     TextStyle? nameTextStyle,
     Color? micIndicatorColor,
   }) {
@@ -67,6 +92,13 @@ class ZegoCallTheme extends ThemeExtension<ZegoCallTheme> {
       activeControlColor: activeControlColor ?? this.activeControlColor,
       inactiveControlColor: inactiveControlColor ?? this.inactiveControlColor,
       hangUpColor: hangUpColor ?? this.hangUpColor,
+      controlPillColor: controlPillColor ?? this.controlPillColor,
+      controlPillMutedColor:
+          controlPillMutedColor ?? this.controlPillMutedColor,
+      controlCircleColor: controlCircleColor ?? this.controlCircleColor,
+      controlMutedIconColor:
+          controlMutedIconColor ?? this.controlMutedIconColor,
+      devicePopoverColor: devicePopoverColor ?? this.devicePopoverColor,
       nameTextStyle: nameTextStyle ?? this.nameTextStyle,
       micIndicatorColor: micIndicatorColor ?? this.micIndicatorColor,
     );
@@ -87,6 +119,16 @@ class ZegoCallTheme extends ThemeExtension<ZegoCallTheme> {
       inactiveControlColor:
           Color.lerp(inactiveControlColor, other.inactiveControlColor, t),
       hangUpColor: Color.lerp(hangUpColor, other.hangUpColor, t),
+      controlPillColor:
+          Color.lerp(controlPillColor, other.controlPillColor, t),
+      controlPillMutedColor:
+          Color.lerp(controlPillMutedColor, other.controlPillMutedColor, t),
+      controlCircleColor:
+          Color.lerp(controlCircleColor, other.controlCircleColor, t),
+      controlMutedIconColor:
+          Color.lerp(controlMutedIconColor, other.controlMutedIconColor, t),
+      devicePopoverColor:
+          Color.lerp(devicePopoverColor, other.devicePopoverColor, t),
       nameTextStyle: TextStyle.lerp(nameTextStyle, other.nameTextStyle, t),
       micIndicatorColor:
           Color.lerp(micIndicatorColor, other.micIndicatorColor, t),
