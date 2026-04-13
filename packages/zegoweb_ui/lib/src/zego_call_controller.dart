@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:zegoweb/zegoweb.dart';
-import 'package:zegoweb/src/models/zego_sound_level.dart';
 
 import 'package:zegoweb_ui/src/zego_call_config.dart';
 import 'package:zegoweb_ui/src/zego_call_state.dart';
@@ -74,11 +73,6 @@ class ZegoCallController extends ChangeNotifier {
   /// Index of the active speaker within [participants].
   int get activeSpeakerIndex => _activeSpeakerIndex;
 
-  Timer? _speakerDebounce;
-  int _pendingSpeakerIndex = -1;
-  static const _speakerThreshold = 5.0;
-  static const _speakerDebounceMs = 500;
-
   // ---------------------------------------------------------------------------
   // Internal
   // ---------------------------------------------------------------------------
@@ -148,7 +142,13 @@ class ZegoCallController extends ChangeNotifier {
       ]);
 
       _subscriptions.add(
-        _engine!.onSoundLevelUpdate.listen(_onSoundLevelUpdate),
+        _engine!.onActiveSpeakerChanged.listen(_onActiveSpeakerChanged),
+      );
+      _subscriptions.add(
+        _engine!.onRemoteCameraStatusUpdate.listen(_onRemoteCameraStatusUpdate),
+      );
+      _subscriptions.add(
+        _engine!.onRemoteMicStatusUpdate.listen(_onRemoteMicStatusUpdate),
       );
 
       await _engine!.loginRoom(
@@ -200,9 +200,6 @@ class ZegoCallController extends ChangeNotifier {
         await sub.cancel();
       }
       _subscriptions.clear();
-      _speakerDebounce?.cancel();
-      _speakerDebounce = null;
-      _pendingSpeakerIndex = -1;
 
       // Release camera/mic hardware before destroying the engine.
       if (_localStream != null) {
@@ -305,6 +302,11 @@ class ZegoCallController extends ChangeNotifier {
       }
     } else {
       for (final streamInfo in update.streams) {
+        // Capture the index before removal for active-speaker adjustment.
+        final removedParticipantIdx = _participants.indexWhere(
+          (p) => p.userId == streamInfo.user.userId && !p.isLocal,
+        );
+
         try {
           await _engine!.stopPlaying(streamInfo.streamId);
         } catch (_) {}
@@ -312,6 +314,15 @@ class ZegoCallController extends ChangeNotifier {
         _participants.removeWhere(
           (p) => p.userId == streamInfo.user.userId && !p.isLocal,
         );
+
+        // Adjust active speaker index.
+        if (removedParticipantIdx >= 0) {
+          if (_activeSpeakerIndex == removedParticipantIdx) {
+            _activeSpeakerIndex = -1;
+          } else if (_activeSpeakerIndex > removedParticipantIdx) {
+            _activeSpeakerIndex--;
+          }
+        }
       }
     }
     notifyListeners();
@@ -328,59 +339,31 @@ class ZegoCallController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _onSoundLevelUpdate(ZegoSoundLevelUpdate update) {
-    // Find the loudest stream above the speaking threshold.
-    String? loudestStreamId;
-    double loudestLevel = 0;
-    for (final level in update.levels) {
-      if (level.soundLevel > _speakerThreshold &&
-          level.soundLevel > loudestLevel) {
-        loudestLevel = level.soundLevel;
-        loudestStreamId = level.streamId;
-      }
+  void _onRemoteCameraStatusUpdate(ZegoRemoteDeviceUpdate update) {
+    final idx = _participantIndexForStream(update.streamId);
+    if (idx >= 0) {
+      _participants[idx] = _participants[idx].copyWith(
+        isCameraOff: !update.isActive,
+      );
+      notifyListeners();
     }
+  }
 
-    if (loudestStreamId == null) {
-      // No one is speaking — clear active speaker.
-      _speakerDebounce?.cancel();
-      _speakerDebounce = null;
-      _pendingSpeakerIndex = -1;
-      if (_activeSpeakerIndex != -1) {
-        _activeSpeakerIndex = -1;
-        notifyListeners();
-      }
-      return;
+  void _onRemoteMicStatusUpdate(ZegoRemoteDeviceUpdate update) {
+    final idx = _participantIndexForStream(update.streamId);
+    if (idx >= 0) {
+      _participants[idx] = _participants[idx].copyWith(
+        isMuted: !update.isActive,
+      );
+      notifyListeners();
     }
+  }
 
-    // Map streamId to participant index.
-    final newIndex = _participantIndexForStream(loudestStreamId);
-    if (newIndex == _activeSpeakerIndex) {
-      // Same speaker — cancel any pending switch.
-      _speakerDebounce?.cancel();
-      _speakerDebounce = null;
-      _pendingSpeakerIndex = -1;
-      return;
-    }
-
-    if (newIndex == _pendingSpeakerIndex) {
-      // Already debouncing for this speaker — let the timer run.
-      return;
-    }
-
-    // New speaker candidate — start debounce.
-    _pendingSpeakerIndex = newIndex;
-    _speakerDebounce?.cancel();
-    _speakerDebounce = Timer(
-      const Duration(milliseconds: _speakerDebounceMs),
-      () {
-        if (_pendingSpeakerIndex != -1 &&
-            _pendingSpeakerIndex != _activeSpeakerIndex) {
-          _activeSpeakerIndex = _pendingSpeakerIndex;
-          _pendingSpeakerIndex = -1;
-          notifyListeners();
-        }
-      },
-    );
+  void _onActiveSpeakerChanged(String? streamId) {
+    final newIndex = streamId == null ? -1 : _participantIndexForStream(streamId);
+    if (newIndex == _activeSpeakerIndex) return;
+    _activeSpeakerIndex = newIndex;
+    notifyListeners();
   }
 
   int _participantIndexForStream(String streamId) {
@@ -420,7 +403,6 @@ class ZegoCallController extends ChangeNotifier {
     if (_state != ZegoCallState.idle) {
       leave();
     }
-    _speakerDebounce?.cancel();
     super.dispose();
   }
 }
