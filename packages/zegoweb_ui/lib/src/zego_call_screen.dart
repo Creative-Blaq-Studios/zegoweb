@@ -128,6 +128,7 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
         if (widget.callConfig.showPreJoinView) {
           return ZegoPreJoinView(
             userName: widget.callConfig.userName ?? widget.callConfig.userId,
+            roomName: widget.callConfig.roomId,
             onJoin: _handleJoin,
             previewWidget: _controller.localStream != null &&
                     _controller.isCameraOn
