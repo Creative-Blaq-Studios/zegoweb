@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:zegoweb/src/models/zego_device_info.dart';
+
 import 'package:zegoweb_ui/src/zego_call_config.dart';
 import 'package:zegoweb_ui/src/zego_call_theme.dart';
+import 'package:zegoweb_ui/src/widgets/zego_control_circle.dart';
+import 'package:zegoweb_ui/src/widgets/zego_control_pill.dart';
+import 'package:zegoweb_ui/src/widgets/zego_hang_up_button.dart';
 
-/// A horizontal row of circular icon buttons for call controls.
-///
-/// Visibility of each button is controlled by the [config]'s `show*` flags.
-/// The hang-up button (red, [Icons.call_end]) is always shown.
-///
-/// Icon states toggle between on/off variants based on [isMicOn],
-/// [isCameraOn], and [isScreenSharing].
 class ZegoControlsBar extends StatelessWidget {
   const ZegoControlsBar({
     super.key,
@@ -19,40 +17,39 @@ class ZegoControlsBar extends StatelessWidget {
     required this.onToggleMic,
     required this.onToggleCamera,
     required this.onToggleScreenShare,
-    required this.onDevicePicker,
     required this.onLayoutSwitcher,
     required this.onHangUp,
+    required this.cameras,
+    required this.microphones,
+    required this.selectedCameraId,
+    required this.selectedMicrophoneId,
+    this.onCameraSelected,
+    this.onMicrophoneSelected,
+    this.onMicChevron,
+    this.onCameraChevron,
+    this.leadingBuilder,
+    this.trailingBuilder,
   });
 
-  /// Call configuration that determines which buttons are visible.
   final ZegoCallConfig config;
-
-  /// Current microphone state.
   final bool isMicOn;
-
-  /// Current camera state.
   final bool isCameraOn;
-
-  /// Current screen sharing state.
   final bool isScreenSharing;
-
-  /// Called when the microphone toggle button is tapped.
   final VoidCallback onToggleMic;
-
-  /// Called when the camera toggle button is tapped.
   final VoidCallback onToggleCamera;
-
-  /// Called when the screen share toggle button is tapped.
   final VoidCallback onToggleScreenShare;
-
-  /// Called when the device picker button is tapped.
-  final VoidCallback onDevicePicker;
-
-  /// Called when the layout switcher button is tapped.
   final VoidCallback onLayoutSwitcher;
-
-  /// Called when the hang up button is tapped.
   final VoidCallback onHangUp;
+  final List<ZegoDeviceInfo> cameras;
+  final List<ZegoDeviceInfo> microphones;
+  final String selectedCameraId;
+  final String selectedMicrophoneId;
+  final ValueChanged<ZegoDeviceInfo>? onCameraSelected;
+  final ValueChanged<ZegoDeviceInfo>? onMicrophoneSelected;
+  final VoidCallback? onMicChevron;
+  final VoidCallback? onCameraChevron;
+  final WidgetBuilder? leadingBuilder;
+  final WidgetBuilder? trailingBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -61,84 +58,105 @@ class ZegoControlsBar extends StatelessWidget {
     final themeExt = Theme.of(context).extension<ZegoCallTheme>();
     final theme = ZegoCallTheme.resolve(themeExt, colorScheme, textTheme);
 
-    final buttons = <Widget>[];
+    final hasSlots = leadingBuilder != null || trailingBuilder != null;
+
+    final centerControls = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: _buildCenterControls(theme),
+    );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: theme.controlsBarColor,
+      child: hasSlots
+          ? Row(
+              children: [
+                if (leadingBuilder != null)
+                  Expanded(child: leadingBuilder!(context)),
+                centerControls,
+                if (trailingBuilder != null)
+                  Expanded(child: trailingBuilder!(context)),
+              ],
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [centerControls],
+            ),
+    );
+  }
+
+  List<Widget> _buildCenterControls(ZegoCallTheme theme) {
+    final controls = <Widget>[];
 
     if (config.showMicrophoneToggle) {
-      buttons.add(_controlButton(
-        icon: isMicOn ? Icons.mic : Icons.mic_off,
-        color: isMicOn ? theme.activeControlColor : theme.inactiveControlColor,
-        onPressed: onToggleMic,
+      controls.add(ZegoControlPill(
+        icon: Icons.mic,
+        offIcon: Icons.mic_off,
+        isOn: isMicOn,
+        onToggle: onToggleMic,
+        devices: microphones,
+        selectedDeviceId: selectedMicrophoneId,
+        onDeviceSelected: onMicrophoneSelected ?? (_) {},
+        onChevronTap: onMicChevron,
+        pillColor: theme.controlPillColor!,
+        mutedPillColor: theme.controlPillMutedColor!,
+        iconColor: theme.activeControlColor!,
+        mutedIconColor: theme.controlMutedIconColor!,
       ));
     }
 
     if (config.showCameraToggle) {
-      buttons.add(_controlButton(
-        icon: isCameraOn ? Icons.videocam : Icons.videocam_off,
-        color:
-            isCameraOn ? theme.activeControlColor : theme.inactiveControlColor,
-        onPressed: onToggleCamera,
+      controls.add(ZegoControlPill(
+        icon: Icons.videocam,
+        offIcon: Icons.videocam_off,
+        isOn: isCameraOn,
+        onToggle: onToggleCamera,
+        devices: cameras,
+        selectedDeviceId: selectedCameraId,
+        onDeviceSelected: onCameraSelected ?? (_) {},
+        onChevronTap: onCameraChevron,
+        pillColor: theme.controlPillColor!,
+        mutedPillColor: theme.controlPillMutedColor!,
+        iconColor: theme.activeControlColor!,
+        mutedIconColor: theme.controlMutedIconColor!,
       ));
     }
 
     if (config.showScreenShareButton) {
-      buttons.add(_controlButton(
+      controls.add(ZegoControlCircle(
         icon: isScreenSharing ? Icons.stop_screen_share : Icons.screen_share,
         color: isScreenSharing
-            ? theme.activeControlColor
-            : theme.inactiveControlColor,
+            ? theme.controlMutedIconColor!
+            : theme.activeControlColor!,
+        backgroundColor: isScreenSharing
+            ? theme.controlPillMutedColor!
+            : theme.controlCircleColor!,
         onPressed: onToggleScreenShare,
       ));
     }
 
-    if (config.showDevicePicker) {
-      buttons.add(_controlButton(
-        icon: Icons.settings,
-        color: theme.activeControlColor,
-        onPressed: onDevicePicker,
-      ));
-    }
-
     if (config.showLayoutSwitcher) {
-      buttons.add(_controlButton(
+      controls.add(ZegoControlCircle(
         icon: Icons.grid_view,
-        color: theme.activeControlColor,
+        color: theme.activeControlColor!,
+        backgroundColor: theme.controlCircleColor!,
         onPressed: onLayoutSwitcher,
       ));
     }
 
-    // Hang up button is always shown.
-    buttons.add(_controlButton(
-      icon: Icons.call_end,
-      color: Colors.white,
-      backgroundColor: theme.hangUpColor ?? Colors.red,
+    controls.add(ZegoHangUpButton(
       onPressed: onHangUp,
+      backgroundColor: theme.hangUpColor,
     ));
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: theme.controlsBarColor,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children:
-            buttons.expand((btn) => [btn, const SizedBox(width: 12)]).toList()
-              ..removeLast(),
-      ),
-    );
-  }
-
-  Widget _controlButton({
-    required IconData icon,
-    required Color? color,
-    Color? backgroundColor,
-    required VoidCallback onPressed,
-  }) {
-    return IconButton(
-      onPressed: onPressed,
-      icon: Icon(icon),
-      color: color,
-      style: backgroundColor != null
-          ? IconButton.styleFrom(backgroundColor: backgroundColor)
-          : null,
-    );
+    // Intersperse with 8px gaps.
+    final spaced = <Widget>[];
+    for (var i = 0; i < controls.length; i++) {
+      spaced.add(controls[i]);
+      if (i < controls.length - 1) {
+        spaced.add(const SizedBox(width: 8));
+      }
+    }
+    return spaced;
   }
 }

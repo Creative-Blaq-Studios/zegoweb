@@ -1,46 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zegoweb_ui/src/zego_call_config.dart';
+import 'package:zegoweb_ui/src/widgets/zego_control_circle.dart';
+import 'package:zegoweb_ui/src/widgets/zego_control_pill.dart';
 import 'package:zegoweb_ui/src/widgets/zego_controls_bar.dart';
+import 'package:zegoweb_ui/src/widgets/zego_hang_up_button.dart';
 
 Widget _wrap(Widget child) {
   return MaterialApp(
-    home: Scaffold(
-      body: child,
-    ),
+    home: Scaffold(body: child),
   );
 }
 
+const _defaultConfig = ZegoCallConfig(roomId: 'r1', userId: 'u1');
+
 void main() {
   group('ZegoControlsBar', () {
-    testWidgets('shows all buttons by default', (tester) async {
-      const config = ZegoCallConfig(roomId: 'r1', userId: 'u1');
-
+    testWidgets('shows all controls by default', (tester) async {
       await tester.pumpWidget(_wrap(
         ZegoControlsBar(
-          config: config,
+          config: _defaultConfig,
           isMicOn: true,
           isCameraOn: true,
           isScreenSharing: false,
           onToggleMic: () {},
           onToggleCamera: () {},
           onToggleScreenShare: () {},
-          onDevicePicker: () {},
           onLayoutSwitcher: () {},
           onHangUp: () {},
+          cameras: const [],
+          microphones: const [],
+          selectedCameraId: '',
+          selectedMicrophoneId: '',
         ),
       ));
 
-      // mic, videocam, screen_share, settings, grid_view, call_end
-      expect(find.byIcon(Icons.mic), findsOneWidget);
-      expect(find.byIcon(Icons.videocam), findsOneWidget);
-      expect(find.byIcon(Icons.screen_share), findsOneWidget);
-      expect(find.byIcon(Icons.settings), findsOneWidget);
-      expect(find.byIcon(Icons.grid_view), findsOneWidget);
-      expect(find.byIcon(Icons.call_end), findsOneWidget);
+      // 2 pills (mic, camera) + 2 circles (screen share, layout) + 1 hang up
+      expect(find.byType(ZegoControlPill), findsNWidgets(2));
+      expect(find.byType(ZegoControlCircle), findsNWidgets(2));
+      expect(find.byType(ZegoHangUpButton), findsOneWidget);
     });
 
-    testWidgets('hides mic when showMicrophoneToggle is false', (tester) async {
+    testWidgets('hides mic pill when showMicrophoneToggle is false',
+        (tester) async {
       const config = ZegoCallConfig(
         roomId: 'r1',
         userId: 'u1',
@@ -56,105 +58,88 @@ void main() {
           onToggleMic: () {},
           onToggleCamera: () {},
           onToggleScreenShare: () {},
-          onDevicePicker: () {},
           onLayoutSwitcher: () {},
           onHangUp: () {},
+          cameras: const [],
+          microphones: const [],
+          selectedCameraId: '',
+          selectedMicrophoneId: '',
         ),
       ));
 
-      expect(find.byIcon(Icons.mic), findsNothing);
-      expect(find.byIcon(Icons.mic_off), findsNothing);
-      // call_end is always shown
-      expect(find.byIcon(Icons.call_end), findsOneWidget);
+      // Only 1 pill (camera), not 2.
+      expect(find.byType(ZegoControlPill), findsOneWidget);
     });
 
-    testWidgets('shows mic_off when mic is off', (tester) async {
-      const config = ZegoCallConfig(roomId: 'r1', userId: 'u1');
-
+    testWidgets('renders leading slot when provided', (tester) async {
       await tester.pumpWidget(_wrap(
         ZegoControlsBar(
-          config: config,
-          isMicOn: false,
-          isCameraOn: true,
-          isScreenSharing: false,
-          onToggleMic: () {},
-          onToggleCamera: () {},
-          onToggleScreenShare: () {},
-          onDevicePicker: () {},
-          onLayoutSwitcher: () {},
-          onHangUp: () {},
-        ),
-      ));
-
-      expect(find.byIcon(Icons.mic_off), findsOneWidget);
-      expect(find.byIcon(Icons.mic), findsNothing);
-    });
-
-    testWidgets('calls onHangUp callback', (tester) async {
-      const config = ZegoCallConfig(roomId: 'r1', userId: 'u1');
-      var hangUpCalled = false;
-
-      await tester.pumpWidget(_wrap(
-        ZegoControlsBar(
-          config: config,
+          config: _defaultConfig,
           isMicOn: true,
           isCameraOn: true,
           isScreenSharing: false,
           onToggleMic: () {},
           onToggleCamera: () {},
           onToggleScreenShare: () {},
-          onDevicePicker: () {},
           onLayoutSwitcher: () {},
-          onHangUp: () => hangUpCalled = true,
+          onHangUp: () {},
+          cameras: const [],
+          microphones: const [],
+          selectedCameraId: '',
+          selectedMicrophoneId: '',
+          leadingBuilder: (_) => const Text('Meeting Info'),
         ),
       ));
 
-      await tester.tap(find.byIcon(Icons.call_end));
-      expect(hangUpCalled, isTrue);
+      expect(find.text('Meeting Info'), findsOneWidget);
     });
 
-    testWidgets('shows videocam_off when camera is off', (tester) async {
-      const config = ZegoCallConfig(roomId: 'r1', userId: 'u1');
-
+    testWidgets('renders trailing slot when provided', (tester) async {
       await tester.pumpWidget(_wrap(
         ZegoControlsBar(
-          config: config,
+          config: _defaultConfig,
           isMicOn: true,
-          isCameraOn: false,
+          isCameraOn: true,
           isScreenSharing: false,
           onToggleMic: () {},
           onToggleCamera: () {},
           onToggleScreenShare: () {},
-          onDevicePicker: () {},
           onLayoutSwitcher: () {},
           onHangUp: () {},
+          cameras: const [],
+          microphones: const [],
+          selectedCameraId: '',
+          selectedMicrophoneId: '',
+          trailingBuilder: (_) => const Text('Side Actions'),
         ),
       ));
 
-      expect(find.byIcon(Icons.videocam_off), findsOneWidget);
-      expect(find.byIcon(Icons.videocam), findsNothing);
+      expect(find.text('Side Actions'), findsOneWidget);
     });
 
-    testWidgets('shows stop_screen_share when screen sharing', (tester) async {
-      const config = ZegoCallConfig(roomId: 'r1', userId: 'u1');
+    testWidgets('hang up calls onHangUp', (tester) async {
+      var called = false;
 
       await tester.pumpWidget(_wrap(
         ZegoControlsBar(
-          config: config,
+          config: _defaultConfig,
           isMicOn: true,
           isCameraOn: true,
-          isScreenSharing: true,
+          isScreenSharing: false,
           onToggleMic: () {},
           onToggleCamera: () {},
           onToggleScreenShare: () {},
-          onDevicePicker: () {},
           onLayoutSwitcher: () {},
-          onHangUp: () {},
+          onHangUp: () => called = true,
+          cameras: const [],
+          microphones: const [],
+          selectedCameraId: '',
+          selectedMicrophoneId: '',
         ),
       ));
 
-      expect(find.byIcon(Icons.stop_screen_share), findsOneWidget);
-      expect(find.byIcon(Icons.screen_share), findsNothing);
+      await tester.tap(find.byType(ZegoHangUpButton));
+      expect(called, isTrue);
     });
   });
 }

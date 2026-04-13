@@ -166,9 +166,16 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
               onToggleScreenShare: _controller.isScreenSharing
                   ? _controller.stopScreenShare
                   : _controller.startScreenShare,
-              onDevicePicker: () {}, // TODO: wire device picker dialog
               onLayoutSwitcher: _handleLayoutSwitch,
               onHangUp: _handleHangUp,
+              cameras: _controller.cameras,
+              microphones: _controller.microphones,
+              selectedCameraId: '',
+              selectedMicrophoneId: '',
+              onCameraSelected: (device) =>
+                  _controller.switchCamera(device.deviceId),
+              onMicrophoneSelected: (device) =>
+                  _controller.switchMicrophone(device.deviceId),
             ),
           ],
         );
