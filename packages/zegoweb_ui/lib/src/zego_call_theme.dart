@@ -65,8 +65,8 @@ class ZegoCallTheme extends ThemeExtension<ZegoCallTheme> {
       devicePopoverColor:
           extension?.devicePopoverColor ?? colorScheme.surfaceContainerHigh,
       nameTextStyle: extension?.nameTextStyle ??
-          textTheme.labelSmall?.copyWith(color: colorScheme.onSurface),
-      micIndicatorColor: extension?.micIndicatorColor ?? colorScheme.primary,
+          textTheme.labelSmall?.copyWith(color: Colors.white),
+      micIndicatorColor: extension?.micIndicatorColor ?? Colors.white,
     );
   }
 
