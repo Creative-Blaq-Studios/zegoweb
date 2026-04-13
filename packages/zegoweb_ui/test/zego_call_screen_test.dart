@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zegoweb/zegoweb.dart';
 import 'package:zegoweb_ui/src/zego_call_config.dart';
 import 'package:zegoweb_ui/src/zego_call_screen.dart';
+import 'package:zegoweb_ui/src/widgets/zego_audio_debug_overlay.dart';
 import 'package:zegoweb_ui/src/widgets/zego_pre_join_view.dart';
 
 Widget _wrap(Widget child) {
@@ -47,7 +48,42 @@ void main() {
           userName: 'Alice',
         ),
       )));
-      expect(find.text('Join'), findsOneWidget);
+      expect(find.text('Join now'), findsOneWidget);
+    });
+
+    testWidgets('does not show debug overlay when debugMode is false',
+        (tester) async {
+      await tester.pumpWidget(_wrap(ZegoCallScreen(
+        engineConfig: ZegoEngineConfig(
+          appId: 1,
+          server: 'wss://example.com',
+          scenario: ZegoScenario.communication,
+          tokenProvider: () async => '',
+        ),
+        callConfig: const ZegoCallConfig(
+          roomId: 'r1',
+          userId: 'u1',
+          debugMode: false,
+        ),
+      )));
+      expect(find.byType(ZegoAudioDebugOverlay), findsNothing);
+    });
+
+    testWidgets('shows debug overlay when debugMode is true', (tester) async {
+      await tester.pumpWidget(_wrap(ZegoCallScreen(
+        engineConfig: ZegoEngineConfig(
+          appId: 1,
+          server: 'wss://example.com',
+          scenario: ZegoScenario.communication,
+          tokenProvider: () async => '',
+        ),
+        callConfig: const ZegoCallConfig(
+          roomId: 'r1',
+          userId: 'u1',
+          debugMode: true,
+        ),
+      )));
+      expect(find.byType(ZegoAudioDebugOverlay), findsOneWidget);
     });
   });
 }

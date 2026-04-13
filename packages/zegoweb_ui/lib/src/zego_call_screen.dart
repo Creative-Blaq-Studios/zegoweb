@@ -4,6 +4,7 @@ import 'package:zegoweb/zegoweb.dart';
 import 'package:zegoweb_ui/src/layouts/zego_grid_layout.dart';
 import 'package:zegoweb_ui/src/layouts/zego_pip_layout.dart';
 import 'package:zegoweb_ui/src/layouts/zego_sidebar_layout.dart';
+import 'package:zegoweb_ui/src/widgets/zego_audio_debug_overlay.dart';
 import 'package:zegoweb_ui/src/widgets/zego_controls_bar.dart';
 import 'package:zegoweb_ui/src/widgets/zego_pre_join_view.dart';
 import 'package:zegoweb_ui/src/zego_call_config.dart';
@@ -138,7 +139,7 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
       case ZegoCallState.idle:
       case ZegoCallState.preJoin:
         if (widget.callConfig.showPreJoinView) {
-          return ZegoPreJoinView(
+          final preJoinBody = ZegoPreJoinView(
             userName: widget.callConfig.userName ?? widget.callConfig.userId,
             roomName: widget.callConfig.roomId,
             onJoin: _handleJoin,
@@ -158,6 +159,11 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
             onCameraSelected: _controller.switchCamera,
             onMicrophoneSelected: _controller.switchMicrophone,
           );
+          if (!widget.callConfig.debugMode) return preJoinBody;
+          return Stack(children: [
+            preJoinBody,
+            ZegoAudioDebugOverlay(controller: _controller),
+          ]);
         }
         return const Center(child: CircularProgressIndicator());
 
@@ -165,7 +171,7 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
         return const Center(child: CircularProgressIndicator());
 
       case ZegoCallState.inCall:
-        return Column(
+        final callBody = Column(
           children: [
             Expanded(
               child: Row(
@@ -206,6 +212,11 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
             ),
           ],
         );
+        if (!widget.callConfig.debugMode) return callBody;
+        return Stack(children: [
+          callBody,
+          ZegoAudioDebugOverlay(controller: _controller),
+        ]);
 
       case ZegoCallState.leaving:
         return const Center(child: CircularProgressIndicator());

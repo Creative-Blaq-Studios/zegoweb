@@ -20,7 +20,7 @@ void main() {
         ),
       ));
 
-      expect(find.widgetWithText(FilledButton, 'Join'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Join now'), findsOneWidget);
     });
 
     testWidgets('shows user name', (tester) async {
@@ -44,7 +44,7 @@ void main() {
         ),
       ));
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Join'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Join now'));
       expect(joinCalled, isTrue);
     });
 

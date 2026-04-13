@@ -107,6 +107,8 @@ class ZegoCallController extends ChangeNotifier {
   Duration get debugDebounce => _debugDebounce;
   set debugDebounce(Duration v) => _debugDebounce = v;
 
+  bool _disposed = false;
+
   ZegoEngine? _engine;
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   final Map<String, ZegoRemoteStream> _remoteStreams = {};
@@ -550,7 +552,14 @@ class ZegoCallController extends ChangeNotifier {
   }
 
   @override
+  void notifyListeners() {
+    if (_disposed) return;
+    super.notifyListeners();
+  }
+
+  @override
   void dispose() {
+    _disposed = true;
     _debugLogController.close(); // broadcast; safe even with no subscribers
     if (_state != ZegoCallState.idle) leave();
     super.dispose();

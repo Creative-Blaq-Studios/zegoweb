@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zegoweb_ui/src/models/zego_audio_settings.dart';
 import 'package:zegoweb_ui/src/zego_call_config.dart';
 import 'package:zegoweb_ui/src/widgets/zego_control_circle.dart';
 import 'package:zegoweb_ui/src/widgets/zego_control_pill.dart';
@@ -32,12 +33,13 @@ void main() {
           microphones: const [],
           selectedCameraId: '',
           selectedMicrophoneId: '',
+          audioSettings: const ZegoAudioSettings(),
         ),
       ));
 
-      // 2 pills (mic, camera) + 1 circle (layout; screen share off by default) + 1 hang up
+      // 2 pills (mic, camera) + 2 circles (layout + gear; screen share off) + 1 hang up
       expect(find.byType(ZegoControlPill), findsNWidgets(2));
-      expect(find.byType(ZegoControlCircle), findsOneWidget);
+      expect(find.byType(ZegoControlCircle), findsNWidgets(2));
       expect(find.byType(ZegoHangUpButton), findsOneWidget);
     });
 
@@ -64,6 +66,7 @@ void main() {
           microphones: const [],
           selectedCameraId: '',
           selectedMicrophoneId: '',
+          audioSettings: const ZegoAudioSettings(),
         ),
       ));
 
@@ -87,6 +90,7 @@ void main() {
           microphones: const [],
           selectedCameraId: '',
           selectedMicrophoneId: '',
+          audioSettings: const ZegoAudioSettings(),
           leadingBuilder: (_) => const Text('Meeting Info'),
         ),
       ));
@@ -110,6 +114,7 @@ void main() {
           microphones: const [],
           selectedCameraId: '',
           selectedMicrophoneId: '',
+          audioSettings: const ZegoAudioSettings(),
           trailingBuilder: (_) => const Text('Side Actions'),
         ),
       ));
@@ -135,6 +140,7 @@ void main() {
           microphones: const [],
           selectedCameraId: '',
           selectedMicrophoneId: '',
+          audioSettings: const ZegoAudioSettings(),
         ),
       ));
 
