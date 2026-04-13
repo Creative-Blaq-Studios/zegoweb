@@ -13,6 +13,7 @@ class ZegoGridLayout extends StatelessWidget {
   const ZegoGridLayout({
     super.key,
     required this.participants,
+    this.activeSpeakerIndex,
     this.spacing = 4.0,
     this.showName = true,
     this.showMicIndicator = true,
@@ -21,6 +22,9 @@ class ZegoGridLayout extends StatelessWidget {
 
   /// The list of participants to display in the grid.
   final List<ZegoParticipant> participants;
+
+  /// Index of the currently active speaker (gets a primary border).
+  final int? activeSpeakerIndex;
 
   /// Spacing between tiles (both horizontal and vertical). Defaults to 4.0.
   final double spacing;
@@ -56,6 +60,7 @@ class ZegoGridLayout extends StatelessWidget {
               showName: showName,
               showMicIndicator: showMicIndicator,
               mirror: participant.isLocal,
+              isActiveSpeaker: activeSpeakerIndex == index,
               videoViewBuilder: videoViewBuilder,
             ),
           ),

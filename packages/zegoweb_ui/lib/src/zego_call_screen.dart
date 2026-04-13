@@ -219,6 +219,7 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
       case ZegoLayoutMode.grid:
         return ZegoGridLayout(
           participants: participants,
+          activeSpeakerIndex: _controller.activeSpeakerIndex,
           videoViewBuilder: _videoViewBuilder,
         );
 
@@ -233,6 +234,7 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
         if (participants.length < 2) {
           return ZegoGridLayout(
             participants: participants,
+            activeSpeakerIndex: _controller.activeSpeakerIndex,
             videoViewBuilder: _videoViewBuilder,
           );
         }

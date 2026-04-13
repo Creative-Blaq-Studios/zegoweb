@@ -13,7 +13,7 @@ void main() {
       expect(config.showPreJoinView, isTrue);
       expect(config.showMicrophoneToggle, isTrue);
       expect(config.showCameraToggle, isTrue);
-      expect(config.showScreenShareButton, isTrue);
+      expect(config.showScreenShareButton, isFalse);
 
       expect(config.showLayoutSwitcher, isTrue);
     });

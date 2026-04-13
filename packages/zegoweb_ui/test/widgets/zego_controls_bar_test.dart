@@ -35,9 +35,9 @@ void main() {
         ),
       ));
 
-      // 2 pills (mic, camera) + 2 circles (screen share, layout) + 1 hang up
+      // 2 pills (mic, camera) + 1 circle (layout; screen share off by default) + 1 hang up
       expect(find.byType(ZegoControlPill), findsNWidgets(2));
-      expect(find.byType(ZegoControlCircle), findsNWidgets(2));
+      expect(find.byType(ZegoControlCircle), findsOneWidget);
       expect(find.byType(ZegoHangUpButton), findsOneWidget);
     });
 

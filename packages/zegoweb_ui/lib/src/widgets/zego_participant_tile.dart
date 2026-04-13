@@ -21,6 +21,7 @@ class ZegoParticipantTile extends StatelessWidget {
     this.showName = true,
     this.showMicIndicator = true,
     this.mirror = false,
+    this.isActiveSpeaker = false,
     this.videoViewBuilder,
   });
 
@@ -36,6 +37,9 @@ class ZegoParticipantTile extends StatelessWidget {
   /// Whether to mirror the video (typically true for local participants).
   final bool mirror;
 
+  /// Whether this participant is the active speaker (shows a primary border).
+  final bool isActiveSpeaker;
+
   /// Optional builder that creates a video view widget from a stream object.
   ///
   /// When running on web, this should be set to create a [ZegoVideoView].
@@ -49,17 +53,29 @@ class ZegoParticipantTile extends StatelessWidget {
     final themeExt = Theme.of(context).extension<ZegoCallTheme>();
     final theme = ZegoCallTheme.resolve(themeExt, colorScheme, textTheme);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(theme.tileBorderRadius ?? 12.0),
-      child: Container(
-        color: theme.tileBackgroundColor,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            _buildContent(theme, colorScheme),
-            if (showName) _buildNameOverlay(theme),
-            if (showMicIndicator) _buildMicIndicator(theme),
-          ],
+    final borderRadius = BorderRadius.circular(theme.tileBorderRadius ?? 12.0);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        border: isActiveSpeaker
+            ? Border.all(color: colorScheme.primary, width: 2.5)
+            : null,
+      ),
+      child: ClipRRect(
+        borderRadius: isActiveSpeaker
+            ? borderRadius - const BorderRadius.all(Radius.circular(2.5))
+            : borderRadius,
+        child: Container(
+          color: theme.tileBackgroundColor,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _buildContent(theme, colorScheme),
+              if (showName) _buildNameOverlay(theme),
+              if (showMicIndicator) _buildMicIndicator(theme),
+            ],
+          ),
         ),
       ),
     );
@@ -105,7 +121,7 @@ class ZegoParticipantTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.black54,
+          color: const Color(0xCC000000),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(

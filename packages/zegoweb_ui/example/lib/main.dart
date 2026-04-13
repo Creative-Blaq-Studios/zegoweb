@@ -29,6 +29,7 @@ class _ZegoUiExampleAppState extends State<ZegoUiExampleApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'zegoweb_ui example',
       themeMode: _themeMode,
       theme: ThemeData(
