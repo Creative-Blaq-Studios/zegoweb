@@ -74,7 +74,13 @@ class _ZegoAudioSettingsPopoverState extends State<ZegoAudioSettingsPopover> {
           offset: const Offset(0, -8),
           child: Align(
             alignment: Alignment.topLeft,
-            child: _PopoverCard(local: _local, onToggle: _toggle),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _PopoverCard(local: _local, onToggle: _toggle),
+                const _PopoverArrow(),
+              ],
+            ),
           ),
         ),
       ],
@@ -126,7 +132,7 @@ class _PopoverCard extends StatelessWidget {
             const SizedBox(height: 10),
             _SettingsRow(
               label: 'Echo Cancellation',
-              subtitle: 'Prevents audio feedback',
+              subtitle: 'Prevents feedback',
               value: local.echoCancellation,
               onChanged: (v) => onToggle(local.copyWith(echoCancellation: v)),
             ),
@@ -148,6 +154,51 @@ class _PopoverCard extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Triangle indicator (points downward toward the gear button)
+// ---------------------------------------------------------------------------
+
+class _PopoverArrow extends StatelessWidget {
+  const _PopoverArrow();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size(8, 8),
+      painter: _DownTrianglePainter(),
+    );
+  }
+}
+
+class _DownTrianglePainter extends CustomPainter {
+  const _DownTrianglePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final fill = Paint()
+      ..color = const Color(0xFF242424)
+      ..style = PaintingStyle.fill;
+    final stroke = Paint()
+      ..color = const Color(0xFF383838)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..close();
+
+    canvas.drawPath(path, fill);
+    canvas.drawPath(path, stroke);
+  }
+
+  @override
+  bool shouldRepaint(_DownTrianglePainter old) => false;
+}
+
+// ---------------------------------------------------------------------------
 
 class _SettingsRow extends StatelessWidget {
   const _SettingsRow({
