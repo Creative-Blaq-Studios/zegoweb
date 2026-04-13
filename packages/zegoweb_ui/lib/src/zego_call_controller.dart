@@ -87,6 +87,16 @@ class ZegoCallController extends ChangeNotifier {
   List<ZegoDeviceInfo> _microphones = [];
   List<ZegoDeviceInfo> get microphones => _microphones;
 
+  String _selectedCameraId = '';
+
+  /// The device ID of the currently selected camera.
+  String get selectedCameraId => _selectedCameraId;
+
+  String _selectedMicrophoneId = '';
+
+  /// The device ID of the currently selected microphone.
+  String get selectedMicrophoneId => _selectedMicrophoneId;
+
   // ---------------------------------------------------------------------------
   // Actions
   // ---------------------------------------------------------------------------
@@ -103,6 +113,10 @@ class ZegoCallController extends ChangeNotifier {
       _localStream = await _engine!.createLocalStream();
       _cameras = await _engine!.getCameras();
       _microphones = await _engine!.getMicrophones();
+      if (_cameras.isNotEmpty) _selectedCameraId = _cameras.first.deviceId;
+      if (_microphones.isNotEmpty) {
+        _selectedMicrophoneId = _microphones.first.deviceId;
+      }
       notifyListeners();
     } catch (e) {
       _lastError = e is ZegoError ? e : ZegoError(-1, e.toString());
@@ -218,11 +232,15 @@ class ZegoCallController extends ChangeNotifier {
   /// Switch camera device.
   Future<void> switchCamera(String deviceId) async {
     await _engine?.useCamera(deviceId);
+    _selectedCameraId = deviceId;
+    notifyListeners();
   }
 
   /// Switch microphone device.
   Future<void> switchMicrophone(String deviceId) async {
     await _engine?.useMicrophone(deviceId);
+    _selectedMicrophoneId = deviceId;
+    notifyListeners();
   }
 
   /// Start screen sharing (placeholder — requires createStream with screen
