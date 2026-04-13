@@ -191,11 +191,15 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
               microphones: _controller.microphones,
               selectedCameraId: _controller.selectedCameraId,
               selectedMicrophoneId: _controller.selectedMicrophoneId,
+              audioSettings: _controller.audioSettings,
               onCameraSelected: (device) async {
                 await _controller.switchCamera(device.deviceId);
               },
               onMicrophoneSelected: (device) async {
                 await _controller.switchMicrophone(device.deviceId);
+              },
+              onSettingsChanged: (settings) {
+                _controller.updateAudioSettings(settings);
               },
               leadingBuilder: widget.leadingBuilder,
               trailingBuilder: widget.trailingBuilder,
@@ -246,9 +250,14 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
           (p) => !p.isLocal,
           orElse: () => participants.first,
         );
+        final activeSpeakerIndex = _controller.activeSpeakerIndex;
         return ZegoPipLayout(
           fullScreenParticipant: remote,
           floatingParticipant: local,
+          isFullScreenActiveSpeaker:
+              participants.indexOf(remote) == activeSpeakerIndex,
+          isFloatingActiveSpeaker:
+              participants.indexOf(local) == activeSpeakerIndex,
           videoViewBuilder: _videoViewBuilder,
         );
     }
