@@ -189,12 +189,19 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
               onHangUp: _handleHangUp,
               cameras: _controller.cameras,
               microphones: _controller.microphones,
-              selectedCameraId: '',
-              selectedMicrophoneId: '',
-              onCameraSelected: (device) =>
-                  _controller.switchCamera(device.deviceId),
-              onMicrophoneSelected: (device) =>
-                  _controller.switchMicrophone(device.deviceId),
+              // TODO: Track selected device IDs in ZegoCallController.
+              selectedCameraId: _controller.cameras.isNotEmpty
+                  ? _controller.cameras.first.deviceId
+                  : '',
+              selectedMicrophoneId: _controller.microphones.isNotEmpty
+                  ? _controller.microphones.first.deviceId
+                  : '',
+              onCameraSelected: (device) async {
+                await _controller.switchCamera(device.deviceId);
+              },
+              onMicrophoneSelected: (device) async {
+                await _controller.switchMicrophone(device.deviceId);
+              },
               leadingBuilder: widget.leadingBuilder,
               trailingBuilder: widget.trailingBuilder,
             ),
