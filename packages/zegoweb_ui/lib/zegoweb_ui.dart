@@ -21,6 +21,7 @@ export 'src/zego_call_state.dart' show ZegoCallState;
 
 // Model
 export 'src/zego_participant.dart' show ZegoParticipant;
+export 'src/models/zego_audio_settings.dart' show ZegoAudioSettings;
 
 // Layouts (composable)
 export 'src/layouts/zego_grid_layout.dart' show ZegoGridLayout;
