@@ -100,7 +100,7 @@ class ZegoEngine with StateGuard {
       _streamUpdateController.stream;
 
   /// Broadcast stream of sound level updates (per-stream volume).
-  /// Only fires after [loginRoom] enables the sound level delegate.
+  /// Fires when the ZEGO SDK emits per-stream volume levels.
   Stream<ZegoSoundLevelUpdate> get onSoundLevelUpdate =>
       _eventBridge.onSoundLevelUpdate;
 
@@ -170,6 +170,7 @@ class ZegoEngine with StateGuard {
       } catch (e) {
         ZegoLog.warn('stopPublishingStream($id) during logout: $e');
       }
+      _monitor?.removeStream(id);
     }
     _locals.clear();
     for (final id in List<String>.from(_remotes.keys)) {
@@ -178,6 +179,7 @@ class ZegoEngine with StateGuard {
       } catch (e) {
         ZegoLog.warn('stopPlayingStream($id) during logout: $e');
       }
+      _monitor?.removeStream(id);
     }
     _remotes.clear();
 
