@@ -89,8 +89,10 @@ class _ZegoPreJoinViewState extends State<ZegoPreJoinView> {
                   flex: 3,
                   child: Column(
                     children: [
-                      // Preview card
+                      // Preview card — 16:9 aspect ratio
                       Expanded(
+                        child: AspectRatio(
+                        aspectRatio: 16 / 9,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(
                             theme.tileBorderRadius ?? 12.0,
@@ -156,6 +158,7 @@ class _ZegoPreJoinViewState extends State<ZegoPreJoinView> {
                             ),
                           ),
                         ),
+                      ),
                       ),
 
                       const SizedBox(height: 12),
