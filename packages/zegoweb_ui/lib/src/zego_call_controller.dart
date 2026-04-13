@@ -139,13 +139,15 @@ class ZegoCallController extends ChangeNotifier {
       final streamId = 'stream-${callConfig.userId}';
       await _engine!.startPublishing(streamId, _localStream!);
 
-      // Add local participant.
+      // Add local participant with current mic/camera state from pre-join.
       _participants.insert(
         0,
         ZegoParticipant(
           userId: callConfig.userId,
           userName: callConfig.userName,
-          stream: _localStream,
+          stream: _isCameraOn ? _localStream : null,
+          isMuted: !_isMicOn,
+          isCameraOff: !_isCameraOn,
           isLocal: true,
         ),
       );
@@ -301,9 +303,13 @@ class ZegoCallController extends ChangeNotifier {
   void _updateLocalParticipant() {
     final idx = _participants.indexWhere((p) => p.isLocal);
     if (idx >= 0) {
-      _participants[idx] = _participants[idx].copyWith(
+      _participants[idx] = ZegoParticipant(
+        userId: _participants[idx].userId,
+        userName: _participants[idx].userName,
+        stream: _isCameraOn ? _localStream : null,
         isMuted: !_isMicOn,
         isCameraOff: !_isCameraOn,
+        isLocal: true,
       );
     }
   }
