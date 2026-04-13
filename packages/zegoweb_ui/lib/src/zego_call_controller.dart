@@ -105,7 +105,10 @@ class ZegoCallController extends ChangeNotifier {
   /// The debounce window a candidate must hold before becoming the active
   /// speaker. Adjust at runtime via the debug panel.
   Duration get debugDebounce => _debugDebounce;
-  set debugDebounce(Duration v) => _debugDebounce = v;
+  set debugDebounce(Duration v) {
+    _debugDebounce = v;
+    notifyListeners();
+  }
 
   bool _disposed = false;
 
@@ -126,11 +129,13 @@ class ZegoCallController extends ChangeNotifier {
     if (!_debugLogController.isClosed) _debugLogController.add(line);
   }
 
+  final StreamController<double> _debugMicLevelController =
+      StreamController<double>.broadcast();
+  StreamSubscription<double>? _debugMicLevelSub;
+
   /// Raw local mic level stream (0.0–1.0) from Web Audio API, 100 ms interval.
-  /// Available from [startPreview] onwards. Returns [Stream.empty] when the
-  /// engine has not yet been created.
-  Stream<double> get debugMicLevel =>
-      _engine?.debugLocalMicLevel ?? Stream.empty();
+  /// Emits once the engine is initialized (after [startPreview] or [join]).
+  Stream<double> get debugMicLevel => _debugMicLevelController.stream;
 
   List<ZegoDeviceInfo> _cameras = [];
   List<ZegoDeviceInfo> get cameras => _cameras;
@@ -161,6 +166,10 @@ class ZegoCallController extends ChangeNotifier {
     try {
       await ZegoWeb.loadScript();
       _engine = await ZegoWeb.createEngine(engineConfig);
+      _debugMicLevelSub?.cancel();
+      _debugMicLevelSub = _engine!.debugLocalMicLevel.listen((level) {
+        if (!_debugMicLevelController.isClosed) _debugMicLevelController.add(level);
+      });
       _localStream = await _engine!.createLocalStream(
         config: ZegoStreamConfig(
           echoCancellation: _audioSettings.echoCancellation,
@@ -190,6 +199,10 @@ class ZegoCallController extends ChangeNotifier {
       if (_engine == null) {
         await ZegoWeb.loadScript();
         _engine = await ZegoWeb.createEngine(engineConfig);
+        _debugMicLevelSub?.cancel();
+        _debugMicLevelSub = _engine!.debugLocalMicLevel.listen((level) {
+          if (!_debugMicLevelController.isClosed) _debugMicLevelController.add(level);
+        });
       }
 
       _subscriptions.addAll([
@@ -277,6 +290,8 @@ class ZegoCallController extends ChangeNotifier {
       // Best-effort teardown.
     }
 
+    _debugMicLevelSub?.cancel();
+    _debugMicLevelSub = null;
     _activeSpeakerDebounceTimer?.cancel();
     _activeSpeakerDebounceTimer = null;
     _activeSpeakerCandidate = null;
@@ -561,6 +576,7 @@ class ZegoCallController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _debugLogController.close(); // broadcast; safe even with no subscribers
+    _debugMicLevelController.close();
     if (_state != ZegoCallState.idle) leave();
     super.dispose();
   }
