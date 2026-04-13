@@ -61,6 +61,10 @@ class _ZegoControlPillState extends State<ZegoControlPill> {
       barrierColor: Colors.transparent,
       builder: (dialogContext) {
         final position = renderBox.localToGlobal(Offset.zero);
+        final screenSize = MediaQuery.of(dialogContext).size;
+        // Position popover so its bottom sits above the pill with 8px gap.
+        final bottomOffset = screenSize.height - position.dy + 8;
+
         return Stack(
           children: [
             GestureDetector(
@@ -70,7 +74,7 @@ class _ZegoControlPillState extends State<ZegoControlPill> {
             ),
             Positioned(
               left: position.dx,
-              top: position.dy - 8,
+              bottom: bottomOffset,
               child: Material(
                 color: Colors.transparent,
                 child: ConstrainedBox(
