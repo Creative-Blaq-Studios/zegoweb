@@ -119,6 +119,16 @@ class ZegoEngine with StateGuard {
   Stream<String?> get onActiveSpeakerChanged =>
       _monitorInstance.onActiveSpeakerChanged;
 
+  /// Emits the normalised RMS level (0.0–1.0) of the first local stream,
+  /// at the monitor's 100 ms poll interval. Returns [Stream.empty] when no
+  /// local stream exists. Zero overhead when no subscriber.
+  Stream<double> get debugLocalMicLevel {
+    return _monitorInstance.levelUpdates.map((levels) {
+      if (_locals.isEmpty) return 0.0;
+      return levels[_locals.keys.first] ?? 0.0;
+    });
+  }
+
   Future<void> loginRoom(String roomId, ZegoUser user) async {
     requireAlive();
     ZegoLog.info('ZegoEngine.loginRoom room=$roomId user=${user.userId}');
@@ -141,6 +151,9 @@ class ZegoEngine with StateGuard {
     }
     _currentUser = user;
     setCurrentRoom(roomId);
+    // Enable periodic sound level events (fires every 200 ms). Must be called
+    // after loginRoom — the SDK ignores this call before a room is joined.
+    _js.setSoundLevelDelegate(true, 200);
     _tokenManager.wireRefresh(
       _eventBridge,
       // renewToken is sync in 3.12; wrap in a completed Future so the
@@ -443,6 +456,39 @@ class ZegoEngine with StateGuard {
     );
   }
 
+  /// Applies AEC / ANS / AGC constraints to the audio track of [stream]
+  /// in-place via `MediaStreamTrack.applyConstraints()`.
+  ///
+  /// This is a no-op stream-recreation alternative: the video track is never
+  /// touched, so the camera tile stays live with zero visible interruption.
+  Future<void> applyAudioConstraints(
+    ZegoLocalStream stream, {
+    required bool echoCancellation,
+    required bool noiseSuppression,
+    required bool autoGainControl,
+  }) async {
+    requireAlive();
+    final mediaStream = stream.jsStream as web.MediaStream;
+    final tracks = mediaStream.getAudioTracks();
+    if (tracks.length == 0) return;
+    final audioTrack = tracks[0];
+    final jsConstraints = <String, Object?>{
+      'echoCancellation': echoCancellation,
+      'noiseSuppression': noiseSuppression,
+      'autoGainControl': autoGainControl,
+    }.jsify() as web.MediaTrackConstraints;
+    try {
+      await audioTrack.applyConstraints(jsConstraints).toDart;
+    } catch (e, st) {
+      throw ZegoError(
+        -1,
+        'applyAudioConstraints failed: $e',
+        cause: e,
+        stackTrace: st,
+      );
+    }
+  }
+
   Future<ZegoPermissionStatus> checkPermissions({
     bool camera = true,
     bool mic = true,
@@ -607,6 +653,11 @@ class ZegoEngine with StateGuard {
       }
     }
     if (roomToLeave != null) {
+      try {
+        _js.setSoundLevelDelegate(false);
+      } catch (e) {
+        ZegoLog.warn('setSoundLevelDelegate(false) during destroy: $e');
+      }
       try {
         _js.logoutRoom(roomToLeave);
       } catch (e) {
