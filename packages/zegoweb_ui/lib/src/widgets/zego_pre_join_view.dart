@@ -90,7 +90,7 @@ class _ZegoPreJoinViewState extends State<ZegoPreJoinView> {
                   child: Column(
                     children: [
                       // Preview card — 16:9 aspect ratio
-                      Expanded(
+                      Flexible(
                         child: AspectRatio(
                         aspectRatio: 16 / 9,
                         child: ClipRRect(
