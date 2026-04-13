@@ -105,8 +105,10 @@ class _ZegoControlsBarState extends State<ZegoControlsBar> {
   }
 
   void _closeSettings() {
-    _settingsOverlay?.remove();
+    final overlay = _settingsOverlay;
     _settingsOverlay = null;
+    overlay?.remove();
+    overlay?.dispose(); // required since Flutter 3.22 to release OverlayEntry resources
     if (mounted) setState(() {});
   }
 
