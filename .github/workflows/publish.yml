@@ -1,0 +1,79 @@
+# .github/workflows/publish.yml
+#
+# Publish packages to pub.dev when a version tag is pushed.
+#
+# Tag format: <package>-v<version>
+#   e.g. zegoweb-v0.0.2, zegoweb_ui-v0.0.3
+#
+# Prerequisites:
+#   1. Authenticate once via `dart pub login` locally, OR
+#   2. Set up automated publishing via pub.dev:
+#      - Go to pub.dev > your package > Admin > Automated publishing
+#      - Add your GitHub repo and configure the tag pattern
+#
+# Pub.dev's "automated publishing" trusts GitHub OIDC tokens, so no
+# secrets are needed once configured on pub.dev.
+
+name: Publish to pub.dev
+
+on:
+  push:
+    tags:
+      - 'zegoweb-v*'
+      - 'zegoweb_ui-v*'
+
+# Only one publish at a time.
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish package
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for pub.dev OIDC authentication
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.0'
+          channel: stable
+          cache: true
+
+      - name: Activate melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
+
+      - name: Determine package from tag
+        id: pkg
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          # Extract package name: everything before the last -vX.Y.Z
+          PACKAGE=$(echo "$TAG" | sed 's/-v[0-9].*$//')
+          VERSION=$(echo "$TAG" | sed 's/^.*-v//')
+          echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Publishing $PACKAGE @ $VERSION"
+
+      - name: Verify version matches pubspec
+        working-directory: packages/${{ steps.pkg.outputs.package }}
+        run: |
+          PUBSPEC_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          TAG_VERSION="${{ steps.pkg.outputs.version }}"
+          if [ "$PUBSPEC_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Tag version ($TAG_VERSION) does not match pubspec version ($PUBSPEC_VERSION)"
+            exit 1
+          fi
+
+      - name: Dry run
+        working-directory: packages/${{ steps.pkg.outputs.package }}
+        run: dart pub publish --dry-run
+
+      - name: Publish
+        working-directory: packages/${{ steps.pkg.outputs.package }}
+        run: dart pub publish --force
