@@ -18,6 +18,8 @@ class ZegoGridLayout extends StatelessWidget {
     this.showName = true,
     this.showMicIndicator = true,
     this.videoViewBuilder,
+    this.pinnedUserId,
+    this.onPinToggle,
   });
 
   /// The list of participants to display in the grid.
@@ -37,6 +39,12 @@ class ZegoGridLayout extends StatelessWidget {
 
   /// Optional builder for creating video view widgets from stream objects.
   final VideoViewBuilder? videoViewBuilder;
+
+  /// The userId of the currently pinned participant, if any.
+  final String? pinnedUserId;
+
+  /// Called when a participant tile is long-pressed to toggle pin.
+  final void Function(String userId)? onPinToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +70,10 @@ class ZegoGridLayout extends StatelessWidget {
               mirror: participant.isLocal,
               isActiveSpeaker: activeSpeakerIndex == index,
               videoViewBuilder: videoViewBuilder,
+              isPinned: participant.userId == pinnedUserId,
+              onLongPress: onPinToggle != null
+                  ? () => onPinToggle!(participant.userId)
+                  : null,
             ),
           ),
         );

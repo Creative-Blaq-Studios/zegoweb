@@ -8,13 +8,14 @@ class ZegoCallConfig {
     required this.roomId,
     required this.userId,
     this.userName,
-    this.layout = ZegoLayoutMode.grid,
+    this.layout = ZegoLayoutMode.auto,
     this.videoFit = BoxFit.contain,
     this.showPreJoinView = true,
     this.showMicrophoneToggle = true,
     this.showCameraToggle = true,
     this.showScreenShareButton = false,
-    this.showLayoutSwitcher = true,
+    this.showLayoutPicker = true,
+    this.hideNoVideoTiles = false,
     this.showAudioDebugOverlay = false,
   });
 
@@ -22,15 +23,13 @@ class ZegoCallConfig {
   final String userId;
   final String? userName;
   final ZegoLayoutMode layout;
+  final BoxFit videoFit;
   final bool showPreJoinView;
   final bool showMicrophoneToggle;
   final bool showCameraToggle;
   final bool showScreenShareButton;
-  final bool showLayoutSwitcher;
-
-  /// How remote and local video streams are fitted within their tile.
-  /// Defaults to [BoxFit.contain] (preserves aspect ratio, letterboxes).
-  final BoxFit videoFit;
+  final bool showLayoutPicker;
+  final bool hideNoVideoTiles;
 
   /// When true, a floating audio debug overlay is shown in the call screen.
   /// The overlay shows live mic levels, active-speaker state, and controls

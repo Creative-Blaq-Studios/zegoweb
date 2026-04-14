@@ -17,6 +17,8 @@ class ZegoSidebarLayout extends StatelessWidget {
     this.showName = true,
     this.showMicIndicator = true,
     this.videoViewBuilder,
+    this.pinnedUserId,
+    this.onPinToggle,
   });
 
   /// All participants in the call.
@@ -37,6 +39,12 @@ class ZegoSidebarLayout extends StatelessWidget {
   /// Optional builder for creating video view widgets from stream objects.
   final VideoViewBuilder? videoViewBuilder;
 
+  /// The userId of the currently pinned participant, if any.
+  final String? pinnedUserId;
+
+  /// Called when a participant tile is long-pressed to toggle pin.
+  final void Function(String userId)? onPinToggle;
+
   @override
   Widget build(BuildContext context) {
     if (participants.isEmpty) {
@@ -51,6 +59,10 @@ class ZegoSidebarLayout extends StatelessWidget {
         showMicIndicator: showMicIndicator,
         mirror: participants.first.isLocal,
         videoViewBuilder: videoViewBuilder,
+        isPinned: participants.first.userId == pinnedUserId,
+        onLongPress: onPinToggle != null
+            ? () => onPinToggle!(participants.first.userId)
+            : null,
       );
     }
 
@@ -75,6 +87,10 @@ class ZegoSidebarLayout extends StatelessWidget {
             showMicIndicator: showMicIndicator,
             mirror: speaker.isLocal,
             videoViewBuilder: videoViewBuilder,
+            isPinned: speaker.userId == pinnedUserId,
+            onLongPress: onPinToggle != null
+                ? () => onPinToggle!(speaker.userId)
+                : null,
           ),
         ),
         SizedBox(width: spacing),
@@ -102,6 +118,10 @@ class ZegoSidebarLayout extends StatelessWidget {
             showMicIndicator: showMicIndicator,
             mirror: participant.isLocal,
             videoViewBuilder: videoViewBuilder,
+            isPinned: participant.userId == pinnedUserId,
+            onLongPress: onPinToggle != null
+                ? () => onPinToggle!(participant.userId)
+                : null,
           ),
         ),
       );
