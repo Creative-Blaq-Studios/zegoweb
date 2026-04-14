@@ -422,12 +422,27 @@ class ZegoCallController extends ChangeNotifier {
         try {
           final remote = await _engine!.startPlaying(streamInfo.streamId);
           _remoteStreams[streamInfo.streamId] = remote;
-          _participants.add(ZegoParticipant(
-            userId: streamInfo.user.userId,
-            userName: streamInfo.user.userName,
-            streamId: streamInfo.streamId,
-            stream: remote,
-          ));
+
+          // If the participant already exists (added from roomUserUpdate),
+          // update it with the stream. Otherwise add a new one.
+          final existingIdx = _participants.indexWhere(
+            (p) => p.userId == streamInfo.user.userId && !p.isLocal,
+          );
+          if (existingIdx >= 0) {
+            _participants[existingIdx] = ZegoParticipant(
+              userId: streamInfo.user.userId,
+              userName: streamInfo.user.userName,
+              streamId: streamInfo.streamId,
+              stream: remote,
+            );
+          } else {
+            _participants.add(ZegoParticipant(
+              userId: streamInfo.user.userId,
+              userName: streamInfo.user.userName,
+              streamId: streamInfo.streamId,
+              stream: remote,
+            ));
+          }
           ZegoLog.info(
             'CallController playing remote stream=${streamInfo.streamId} '
             'participants=${_participants.length}',
@@ -445,25 +460,27 @@ class ZegoCallController extends ChangeNotifier {
           'CallController remote stream REMOVE '
           'stream=${streamInfo.streamId} user=${streamInfo.user.userId}',
         );
-        // Capture the index before removal for active-speaker adjustment.
-        final removedParticipantIdx = _participants.indexWhere(
-          (p) => p.userId == streamInfo.user.userId && !p.isLocal,
-        );
 
         try {
           await _engine!.stopPlaying(streamInfo.streamId);
         } catch (_) {}
         _remoteStreams.remove(streamInfo.streamId);
-        _participants.removeWhere(
+
+        // Clear stream from participant but keep them in the list — they
+        // are still in the room, just not publishing.
+        final idx = _participants.indexWhere(
           (p) => p.userId == streamInfo.user.userId && !p.isLocal,
         );
-
-        // Adjust active speaker index.
-        if (removedParticipantIdx >= 0) {
-          if (_activeSpeakerIndex == removedParticipantIdx) {
+        if (idx >= 0) {
+          _participants[idx] = ZegoParticipant(
+            userId: _participants[idx].userId,
+            userName: _participants[idx].userName,
+            isCameraOff: true,
+            isMuted: true,
+          );
+          // Adjust active speaker index.
+          if (_activeSpeakerIndex == idx) {
             _activeSpeakerIndex = -1;
-          } else if (_activeSpeakerIndex > removedParticipantIdx) {
-            _activeSpeakerIndex--;
           }
         }
       }
@@ -476,6 +493,50 @@ class ZegoCallController extends ChangeNotifier {
       'CallController roomUserUpdate type=${update.type.name} '
       'users=${update.users.map((u) => u.userId).join(", ")}',
     );
+    if (update.type == ZegoUpdateType.add) {
+      for (final user in update.users) {
+        // Skip if this user already has a participant (from a stream update
+        // that arrived first, or if it's the local user).
+        final exists = _participants.any((p) => p.userId == user.userId);
+        if (!exists) {
+          _participants.add(ZegoParticipant(
+            userId: user.userId,
+            userName: user.userName,
+            isCameraOff: true,
+            isMuted: true,
+          ));
+          ZegoLog.info(
+            'CallController added stream-less participant '
+            'user=${user.userId}',
+          );
+        }
+      }
+    } else {
+      for (final user in update.users) {
+        final removedIdx = _participants.indexWhere(
+          (p) => p.userId == user.userId && !p.isLocal,
+        );
+        if (removedIdx >= 0) {
+          // Stop playing any stream for this user.
+          final streamId = _participants[removedIdx].streamId;
+          if (streamId != null) {
+            try {
+              _engine?.stopPlaying(streamId);
+            } catch (_) {}
+            _remoteStreams.remove(streamId);
+          }
+          _participants.removeAt(removedIdx);
+          if (_activeSpeakerIndex == removedIdx) {
+            _activeSpeakerIndex = -1;
+          } else if (_activeSpeakerIndex > removedIdx) {
+            _activeSpeakerIndex--;
+          }
+          ZegoLog.info(
+            'CallController removed participant user=${user.userId}',
+          );
+        }
+      }
+    }
     notifyListeners();
   }
 

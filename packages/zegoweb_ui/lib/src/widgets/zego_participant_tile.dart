@@ -82,36 +82,41 @@ class ZegoParticipantTile extends StatelessWidget {
   }
 
   Widget _buildContent(ZegoCallTheme theme, ColorScheme colorScheme) {
-    final hasVideo = participant.stream != null && !participant.isCameraOff;
+    final hasStream = participant.stream != null && videoViewBuilder != null;
+    final showVideo = hasStream && !participant.isCameraOff;
 
-    if (hasVideo) {
-      if (videoViewBuilder != null) {
-        return videoViewBuilder!(participant.stream!, mirror);
-      }
-      // Fallback when no builder is provided but a stream exists.
-      return Container(
-        color: Colors.black,
-        child: const Center(
-          child: Icon(Icons.videocam, color: Colors.white38, size: 48),
-        ),
-      );
-    }
-
-    // Camera-off placeholder with initials.
-    return Center(
-      child: CircleAvatar(
-        radius: 32,
-        backgroundColor: colorScheme.primaryContainer,
-        child: Text(
-          participant.initials,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: colorScheme.onPrimaryContainer,
+    // When camera is off, show the initials placeholder. If a stream still
+    // exists (mic-only), render a hidden video view underneath so the
+    // <video> HTML element stays mounted and audio keeps playing.
+    if (!showVideo) {
+      final placeholder = Center(
+        child: CircleAvatar(
+          radius: 32,
+          backgroundColor: colorScheme.primaryContainer,
+          child: Text(
+            participant.initials,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onPrimaryContainer,
+            ),
           ),
         ),
-      ),
-    );
+      );
+      if (hasStream && !participant.isLocal) {
+        // Keep the video view alive (zero-size) for audio playback.
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            Offstage(child: videoViewBuilder!(participant.stream!, mirror)),
+            placeholder,
+          ],
+        );
+      }
+      return placeholder;
+    }
+
+    return videoViewBuilder!(participant.stream!, mirror);
   }
 
   Widget _buildNameOverlay(ZegoCallTheme theme) {
