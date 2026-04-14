@@ -22,6 +22,8 @@ class ZegoParticipantTile extends StatelessWidget {
     this.showMicIndicator = true,
     this.mirror = false,
     this.isActiveSpeaker = false,
+    this.isPinned = false,
+    this.onLongPress,
     this.videoViewBuilder,
   });
 
@@ -40,6 +42,12 @@ class ZegoParticipantTile extends StatelessWidget {
   /// Whether this participant is the active speaker (shows a primary border).
   final bool isActiveSpeaker;
 
+  /// Whether this participant is pinned (shows a pin chip overlay at top-left).
+  final bool isPinned;
+
+  /// Called when the tile is long-pressed (e.g. to trigger pin/unpin).
+  final VoidCallback? onLongPress;
+
   /// Optional builder that creates a video view widget from a stream object.
   ///
   /// When running on web, this should be set to create a [ZegoVideoView].
@@ -55,25 +63,29 @@ class ZegoParticipantTile extends StatelessWidget {
 
     final borderRadius = BorderRadius.circular(theme.tileBorderRadius ?? 12.0);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: borderRadius,
-        border: isActiveSpeaker
-            ? Border.all(color: colorScheme.primary, width: 2.5)
-            : null,
-      ),
-      child: ClipRRect(
-        borderRadius: isActiveSpeaker
-            ? borderRadius - const BorderRadius.all(Radius.circular(2.5))
-            : borderRadius,
-        child: Container(
-          color: theme.tileBackgroundColor,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              _buildContent(theme, colorScheme),
-              if (showName) _buildNameOverlay(theme),
-            ],
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: borderRadius,
+          border: isActiveSpeaker
+              ? Border.all(color: colorScheme.primary, width: 2.5)
+              : null,
+        ),
+        child: ClipRRect(
+          borderRadius: isActiveSpeaker
+              ? borderRadius - const BorderRadius.all(Radius.circular(2.5))
+              : borderRadius,
+          child: Container(
+            color: theme.tileBackgroundColor,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _buildContent(theme, colorScheme),
+                if (showName) _buildNameOverlay(theme),
+                if (isPinned) _buildPinOverlay(),
+              ],
+            ),
           ),
         ),
       ),
@@ -116,6 +128,31 @@ class ZegoParticipantTile extends StatelessWidget {
     }
 
     return videoViewBuilder!(participant.stream!, mirror);
+  }
+
+  Widget _buildPinOverlay() {
+    return Positioned(
+      left: 8,
+      top: 8,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: const Color(0xCC000000),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.push_pin, size: 12, color: Colors.white),
+            SizedBox(width: 2),
+            Text(
+              'Unpin',
+              style: TextStyle(color: Colors.white, fontSize: 10),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildNameOverlay(ZegoCallTheme theme) {
