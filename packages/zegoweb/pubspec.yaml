@@ -3,7 +3,7 @@ description: >
   Unofficial Flutter web plugin wrapping ZEGOCLOUD's Express Video Web SDK
   (zego-express-engine-webrtc) via dart:js_interop. Not affiliated with or
   endorsed by ZEGOCLOUD.
-version: 0.0.1
+version: 0.0.2
 license: MIT
 homepage: https://github.com/Creative-Blaq-Studios/zegoweb
 repository: https://github.com/Creative-Blaq-Studios/zegoweb
