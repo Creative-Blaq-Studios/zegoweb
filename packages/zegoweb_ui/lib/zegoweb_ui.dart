@@ -27,6 +27,8 @@ export 'src/models/zego_audio_settings.dart' show ZegoAudioSettings;
 export 'src/layouts/zego_grid_layout.dart' show ZegoGridLayout;
 export 'src/layouts/zego_sidebar_layout.dart' show ZegoSidebarLayout;
 export 'src/layouts/zego_pip_layout.dart' show ZegoPipLayout;
+export 'src/layouts/zego_spotlight_layout.dart' show ZegoSpotlightLayout;
+export 'src/layouts/zego_gallery_layout.dart' show ZegoGalleryLayout;
 
 // Widgets (composable)
 export 'src/widgets/zego_participant_tile.dart' show ZegoParticipantTile;
