@@ -42,10 +42,7 @@ class _ZegoUiExampleAppState extends State<ZegoUiExampleApp> {
         brightness: Brightness.dark,
         useMaterial3: true,
       ),
-      home: SetupScreen(
-        themeMode: _themeMode,
-        onToggleTheme: _toggleTheme,
-      ),
+      home: SetupScreen(themeMode: _themeMode, onToggleTheme: _toggleTheme),
     );
   }
 }
@@ -102,16 +99,16 @@ class _SetupScreenState extends State<SetupScreen> {
   }
 
   IconData get _themeIcon => switch (widget.themeMode) {
-        ThemeMode.system => Icons.brightness_auto,
-        ThemeMode.light => Icons.light_mode,
-        ThemeMode.dark => Icons.dark_mode,
-      };
+    ThemeMode.system => Icons.brightness_auto,
+    ThemeMode.light => Icons.light_mode,
+    ThemeMode.dark => Icons.dark_mode,
+  };
 
   String get _themeLabel => switch (widget.themeMode) {
-        ThemeMode.system => 'System',
-        ThemeMode.light => 'Light',
-        ThemeMode.dark => 'Dark',
-      };
+    ThemeMode.system => 'System',
+    ThemeMode.light => 'Light',
+    ThemeMode.dark => 'Dark',
+  };
 
   @override
   void dispose() {
