@@ -4,13 +4,14 @@ description: >
   (zego-express-engine-webrtc) via dart:js_interop. Not affiliated with or
   endorsed by ZEGOCLOUD.
 version: 0.0.1
+license: MIT
 homepage: https://github.com/Creative-Blaq-Studios/zegoweb
 repository: https://github.com/Creative-Blaq-Studios/zegoweb
 issue_tracker: https://github.com/Creative-Blaq-Studios/zegoweb/issues
 
 environment:
-  sdk: ">=3.6.0 <4.0.0"
-  flutter: ">=3.24.0"
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
 
 dependencies:
   flutter:

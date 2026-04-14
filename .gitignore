@@ -8,6 +8,7 @@ pubspec.lock
 
 # Melos
 .melos_tool/
+pubspec_overrides.yaml
 
 # IDE
 .idea/
