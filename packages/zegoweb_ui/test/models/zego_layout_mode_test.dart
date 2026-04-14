@@ -3,11 +3,14 @@ import 'package:zegoweb_ui/src/zego_layout_mode.dart';
 
 void main() {
   group('ZegoLayoutMode', () {
-    test('has grid, sidebar, pip in order', () {
+    test('has grid, sidebar, pip, spotlight, gallery, auto in order', () {
       expect(ZegoLayoutMode.values, [
         ZegoLayoutMode.grid,
         ZegoLayoutMode.sidebar,
         ZegoLayoutMode.pip,
+        ZegoLayoutMode.spotlight,
+        ZegoLayoutMode.gallery,
+        ZegoLayoutMode.auto,
       ]);
     });
   });
