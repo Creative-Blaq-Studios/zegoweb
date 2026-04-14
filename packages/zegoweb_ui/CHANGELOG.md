@@ -1,3 +1,20 @@
+## 0.1.0
+
+### Breaking Changes
+- `showLayoutSwitcher` renamed to `showLayoutPicker` on `ZegoCallConfig`.
+- Default layout changed from `grid` to `auto`.
+- Mic indicator moved from top-right to inside name chip on participant tiles.
+
+### New Features
+- **Layout picker dialog** — Google Meet-style "Adjust view" dialog with layout selection, tile size slider, and hide-no-video toggle.
+- **Spotlight layout** — full-screen active speaker, no other tiles visible.
+- **Gallery layout** — large speaker + horizontal filmstrip of thumbnails.
+- **Auto layout** — dynamically selects layout based on participant count and screen sharing state.
+- **Tile size slider** — control grid column count (2–6) from the layout picker.
+- **Hide tiles without video** — toggle to hide camera-off participants.
+- **Pin participant** — long-press a tile to pin as main speaker.
+- **PiP floating tile shadow** — drop shadow for visual separation from background.
+
 ## 0.0.5
 
 - Add `videoFit` to `ZegoCallConfig` — developers can choose `BoxFit.cover`, `.contain`, `.fill`, etc. Defaults to `BoxFit.contain`.
