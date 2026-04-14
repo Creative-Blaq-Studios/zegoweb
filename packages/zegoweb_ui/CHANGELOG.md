@@ -1,3 +1,7 @@
+## 0.0.4
+
+- **Fix**: Require zegoweb ^0.0.2 (ZegoLog export needed for lifecycle logging).
+
 ## 0.0.3
 
 - **Fix**: Show participants who join a room without publishing a stream (camera+mic off).
