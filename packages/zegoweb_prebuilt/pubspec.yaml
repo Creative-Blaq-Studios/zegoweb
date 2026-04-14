@@ -4,9 +4,9 @@ description: >
   JavaScript UIKit via dart:js_interop. Drop-in pre-built call UI.
   Not affiliated with or endorsed by ZEGOCLOUD.
 version: 0.0.1
-homepage: https://github.com/edwincoderyu/zegoweb
-repository: https://github.com/edwincoderyu/zegoweb
-issue_tracker: https://github.com/edwincoderyu/zegoweb/issues
+homepage: https://github.com/Creative-Blaq-Studios/zegoweb
+repository: https://github.com/Creative-Blaq-Studios/zegoweb
+issue_tracker: https://github.com/Creative-Blaq-Studios/zegoweb/issues
 
 environment:
   sdk: ">=3.4.0 <4.0.0"

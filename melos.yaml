@@ -1,5 +1,5 @@
 name: zegoweb
-repository: https://github.com/edwincoderyu/zegoweb
+repository: https://github.com/Creative-Blaq-Studios/zegoweb
 
 packages:
   - packages/*
@@ -31,3 +31,21 @@ scripts:
   format-check:
     run: melos exec -- "dart format --output=none --set-exit-if-changed ."
     description: Fail (without writing changes) if any package is not formatted.
+
+  docs:api:
+    description: Generate dartdoc for all packages into docs-site/static/api/
+    run: |
+      mkdir -p docs-site/static/api
+      dart doc packages/zegoweb -o docs-site/static/api/zegoweb
+      dart doc packages/zegoweb_ui -o docs-site/static/api/zegoweb_ui
+      dart doc packages/zegoweb_prebuilt -o docs-site/static/api/zegoweb_prebuilt
+
+  docs:serve:
+    description: Start Docusaurus dev server
+    run: cd docs-site && npm start
+
+  docs:build:
+    description: Build full docs site (dartdoc + Docusaurus)
+    run: |
+      melos run docs:api
+      cd docs-site && npm run build
