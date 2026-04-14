@@ -8,7 +8,7 @@ import 'package:zegoweb_ui/src/zego_call_config.dart';
 import 'package:zegoweb_ui/src/zego_call_controller.dart';
 import 'package:zegoweb_ui/src/widgets/zego_audio_debug_overlay.dart';
 
-ZegoCallController _makeController({bool debugMode = true}) {
+ZegoCallController _makeController({bool showAudioDebugOverlay = true}) {
   return ZegoCallController(
     engineConfig: ZegoEngineConfig(
       appId: 1,
@@ -19,7 +19,7 @@ ZegoCallController _makeController({bool debugMode = true}) {
     callConfig: ZegoCallConfig(
       roomId: 'r1',
       userId: 'u1',
-      debugMode: debugMode,
+      showAudioDebugOverlay: showAudioDebugOverlay,
     ),
   );
 }

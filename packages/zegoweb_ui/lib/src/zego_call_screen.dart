@@ -159,7 +159,7 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
             onCameraSelected: _controller.switchCamera,
             onMicrophoneSelected: _controller.switchMicrophone,
           );
-          if (!widget.callConfig.debugMode) return preJoinBody;
+          if (!widget.callConfig.showAudioDebugOverlay) return preJoinBody;
           return Stack(children: [
             preJoinBody,
             ZegoAudioDebugOverlay(controller: _controller),
@@ -212,7 +212,7 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
             ),
           ],
         );
-        if (!widget.callConfig.debugMode) return callBody;
+        if (!widget.callConfig.showAudioDebugOverlay) return callBody;
         return Stack(children: [
           callBody,
           ZegoAudioDebugOverlay(controller: _controller),

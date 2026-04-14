@@ -26,7 +26,7 @@ const Color _kLogBg = Color(0xFF060A12);
 /// Floating, draggable, minimizable debug panel driven by [ZegoCallController].
 ///
 /// Mounts as part of a [Stack]. Only add this widget when
-/// [ZegoCallConfig.debugMode] is true.
+/// [ZegoCallConfig.showAudioDebugOverlay] is true.
 class ZegoAudioDebugOverlay extends StatefulWidget {
   const ZegoAudioDebugOverlay({super.key, required this.controller});
   final ZegoCallController controller;

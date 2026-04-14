@@ -9,6 +9,9 @@ import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 // Entry point
 export 'src/zego_web.dart' show ZegoWeb;
 
+// Logging
+export 'src/log.dart' show ZegoLog;
+
 // Engine + stream handles
 export 'src/zego_engine.dart' show ZegoEngine;
 export 'src/zego_local_stream.dart' show ZegoLocalStream;

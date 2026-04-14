@@ -51,7 +51,7 @@ void main() {
       expect(find.text('Join now'), findsOneWidget);
     });
 
-    testWidgets('does not show debug overlay when debugMode is false',
+    testWidgets('does not show debug overlay when showAudioDebugOverlay is false',
         (tester) async {
       await tester.pumpWidget(_wrap(ZegoCallScreen(
         engineConfig: ZegoEngineConfig(
@@ -63,13 +63,13 @@ void main() {
         callConfig: const ZegoCallConfig(
           roomId: 'r1',
           userId: 'u1',
-          debugMode: false,
+          showAudioDebugOverlay: false,
         ),
       )));
       expect(find.byType(ZegoAudioDebugOverlay), findsNothing);
     });
 
-    testWidgets('shows debug overlay when debugMode is true', (tester) async {
+    testWidgets('shows debug overlay when showAudioDebugOverlay is true', (tester) async {
       await tester.pumpWidget(_wrap(ZegoCallScreen(
         engineConfig: ZegoEngineConfig(
           appId: 1,
@@ -80,7 +80,7 @@ void main() {
         callConfig: const ZegoCallConfig(
           roomId: 'r1',
           userId: 'u1',
-          debugMode: true,
+          showAudioDebugOverlay: true,
         ),
       )));
       expect(find.byType(ZegoAudioDebugOverlay), findsOneWidget);

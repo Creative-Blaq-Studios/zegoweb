@@ -16,7 +16,7 @@ void main() {
       expect(config.showScreenShareButton, isFalse);
 
       expect(config.showLayoutSwitcher, isTrue);
-      expect(config.debugMode, isFalse);
+      expect(config.showAudioDebugOverlay, isFalse);
     });
 
     test('all fields can be overridden', () {
@@ -30,7 +30,7 @@ void main() {
         showCameraToggle: false,
         showScreenShareButton: false,
         showLayoutSwitcher: false,
-        debugMode: true,
+        showAudioDebugOverlay: true,
       );
       expect(config.userName, 'Alice');
       expect(config.layout, ZegoLayoutMode.pip);
@@ -39,21 +39,21 @@ void main() {
       expect(config.showCameraToggle, isFalse);
       expect(config.showScreenShareButton, isFalse);
       expect(config.showLayoutSwitcher, isFalse);
-      expect(config.debugMode, isTrue);
+      expect(config.showAudioDebugOverlay, isTrue);
     });
 
-    test('debugMode defaults to false', () {
+    test('showAudioDebugOverlay defaults to false', () {
       const config = ZegoCallConfig(roomId: 'r1', userId: 'u1');
-      expect(config.debugMode, isFalse);
+      expect(config.showAudioDebugOverlay, isFalse);
     });
 
-    test('debugMode can be set to true', () {
+    test('showAudioDebugOverlay can be set to true', () {
       const config = ZegoCallConfig(
         roomId: 'r1',
         userId: 'u1',
-        debugMode: true,
+        showAudioDebugOverlay: true,
       );
-      expect(config.debugMode, isTrue);
+      expect(config.showAudioDebugOverlay, isTrue);
     });
   });
 }

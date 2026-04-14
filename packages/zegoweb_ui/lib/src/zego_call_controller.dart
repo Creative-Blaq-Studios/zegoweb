@@ -119,13 +119,12 @@ class ZegoCallController extends ChangeNotifier {
   final StreamController<String> _debugLogController =
       StreamController<String>.broadcast();
 
-  /// Broadcast stream of debug log lines. Only emits when
-  /// [callConfig.debugMode] is true.
+  /// Broadcast stream of debug log lines for the audio debug overlay.
+  /// Only emits when [callConfig.showAudioDebugOverlay] is true.
   Stream<String> get debugLog => _debugLogController.stream;
 
-  void _debugEmit(String line) {
-    if (!callConfig.debugMode) return;
-    debugPrint('[ZegoDebug] $line');
+  void _audioDebugEmit(String line) {
+    if (!callConfig.showAudioDebugOverlay) return;
     if (!_debugLogController.isClosed) _debugLogController.add(line);
   }
 
@@ -162,6 +161,7 @@ class ZegoCallController extends ChangeNotifier {
   Future<void> startPreview() async {
     if (_engine != null) return; // already initialized
     _setState(ZegoCallState.preJoin);
+    ZegoLog.info('CallController.startPreview');
 
     try {
       await ZegoWeb.loadScript();
@@ -183,8 +183,13 @@ class ZegoCallController extends ChangeNotifier {
       if (_microphones.isNotEmpty) {
         _selectedMicrophoneId = _microphones.first.deviceId;
       }
+      ZegoLog.info(
+        'CallController.startPreview complete — '
+        'cameras=${_cameras.length} mics=${_microphones.length}',
+      );
       notifyListeners();
     } catch (e) {
+      ZegoLog.error('CallController.startPreview failed: $e');
       _lastError = e is ZegoError ? e : ZegoError(-1, e.toString());
       notifyListeners();
     }
@@ -194,6 +199,10 @@ class ZegoCallController extends ChangeNotifier {
   Future<void> join() async {
     if (_state != ZegoCallState.idle && _state != ZegoCallState.preJoin) return;
     _setState(ZegoCallState.joining);
+    ZegoLog.info(
+      'CallController.join room=${callConfig.roomId} '
+      'user=${callConfig.userId}',
+    );
 
     try {
       if (_engine == null) {
@@ -238,6 +247,7 @@ class ZegoCallController extends ChangeNotifier {
       );
       final streamId = 'stream-${callConfig.userId}';
       await _engine!.startPublishing(streamId, _localStream!);
+      ZegoLog.info('CallController.join published streamId=$streamId');
 
       // Add local participant with current mic/camera state from pre-join.
       _participants.insert(
@@ -253,13 +263,16 @@ class ZegoCallController extends ChangeNotifier {
         ),
       );
 
+      ZegoLog.info('CallController.join complete — in call');
       _setState(ZegoCallState.inCall);
     } on ZegoError catch (e) {
+      ZegoLog.error('CallController.join failed: $e');
       _lastError = e;
       _setState(ZegoCallState.idle);
       notifyListeners();
       rethrow;
     } catch (e) {
+      ZegoLog.error('CallController.join failed: $e');
       _lastError = ZegoError(-1, e.toString());
       _setState(ZegoCallState.idle);
       notifyListeners();
@@ -271,6 +284,7 @@ class ZegoCallController extends ChangeNotifier {
   Future<void> leave() async {
     if (_state == ZegoCallState.idle || _state == ZegoCallState.leaving) return;
     _setState(ZegoCallState.leaving);
+    ZegoLog.info('CallController.leave room=${callConfig.roomId}');
 
     try {
       for (final sub in _subscriptions) {
@@ -287,8 +301,8 @@ class ZegoCallController extends ChangeNotifier {
 
       await _engine?.destroy();
       _engine = null;
-    } catch (_) {
-      // Best-effort teardown.
+    } catch (e) {
+      ZegoLog.warn('CallController.leave teardown error: $e');
     }
 
     _debugMicLevelSub?.cancel();
@@ -401,6 +415,10 @@ class ZegoCallController extends ChangeNotifier {
   Future<void> _onRoomStreamUpdate(ZegoRoomStreamUpdate update) async {
     if (update.type == ZegoUpdateType.add) {
       for (final streamInfo in update.streams) {
+        ZegoLog.info(
+          'CallController remote stream ADD '
+          'stream=${streamInfo.streamId} user=${streamInfo.user.userId}',
+        );
         try {
           final remote = await _engine!.startPlaying(streamInfo.streamId);
           _remoteStreams[streamInfo.streamId] = remote;
@@ -410,15 +428,23 @@ class ZegoCallController extends ChangeNotifier {
             streamId: streamInfo.streamId,
             stream: remote,
           ));
+          ZegoLog.info(
+            'CallController playing remote stream=${streamInfo.streamId} '
+            'participants=${_participants.length}',
+          );
         } catch (e) {
-          debugPrint(
-            '[ZegoCallController] startPlaying failed for '
+          ZegoLog.error(
+            'CallController startPlaying failed '
             'stream=${streamInfo.streamId} user=${streamInfo.user.userId}: $e',
           );
         }
       }
     } else {
       for (final streamInfo in update.streams) {
+        ZegoLog.info(
+          'CallController remote stream REMOVE '
+          'stream=${streamInfo.streamId} user=${streamInfo.user.userId}',
+        );
         // Capture the index before removal for active-speaker adjustment.
         final removedParticipantIdx = _participants.indexWhere(
           (p) => p.userId == streamInfo.user.userId && !p.isLocal,
@@ -446,17 +472,24 @@ class ZegoCallController extends ChangeNotifier {
   }
 
   void _onRoomUserUpdate(ZegoRoomUserUpdate update) {
-    // User join/leave is already handled via stream updates.
-    // This could be used to track users without streams.
+    ZegoLog.info(
+      'CallController roomUserUpdate type=${update.type.name} '
+      'users=${update.users.map((u) => u.userId).join(", ")}',
+    );
     notifyListeners();
   }
 
   void _onError(ZegoError error) {
+    ZegoLog.error('CallController error: $error');
     _lastError = error;
     notifyListeners();
   }
 
   void _onRemoteCameraStatusUpdate(ZegoRemoteDeviceUpdate update) {
+    ZegoLog.verbose(
+      'CallController remoteCameraStatus '
+      'stream=${update.streamId} active=${update.isActive}',
+    );
     final idx = _participantIndexForStream(update.streamId);
     if (idx >= 0) {
       _participants[idx] = _participants[idx].copyWith(
@@ -467,6 +500,10 @@ class ZegoCallController extends ChangeNotifier {
   }
 
   void _onRemoteMicStatusUpdate(ZegoRemoteDeviceUpdate update) {
+    ZegoLog.verbose(
+      'CallController remoteMicStatus '
+      'stream=${update.streamId} active=${update.isActive}',
+    );
     final idx = _participantIndexForStream(update.streamId);
     if (idx >= 0) {
       _participants[idx] = _participants[idx].copyWith(
@@ -490,7 +527,7 @@ class ZegoCallController extends ChangeNotifier {
     final candidateId = loudest?.streamId;
 
     if (candidateId == null) {
-      _debugEmit(
+      _audioDebugEmit(
         '${update.levels.map((l) => '${l.streamId.split("-").last}:${l.soundLevel.toStringAsFixed(1)}').join(" | ")} → silence',
       );
       // Silence — clear immediately, no debounce.
@@ -501,7 +538,7 @@ class ZegoCallController extends ChangeNotifier {
       return;
     }
 
-    _debugEmit(
+    _audioDebugEmit(
       'loudest: ${candidateId.split("-").last} @ ${loudest!.soundLevel.toStringAsFixed(1)} (thr $_debugThreshold)',
     );
 
@@ -519,7 +556,7 @@ class ZegoCallController extends ChangeNotifier {
     // New candidate — start debounce.
     _activeSpeakerDebounceTimer?.cancel();
     _activeSpeakerCandidate = candidateId;
-    _debugEmit('⏱ debounce → ${candidateId.split("-").last}');
+    _audioDebugEmit('⏱ debounce → ${candidateId.split("-").last}');
     _activeSpeakerDebounceTimer = Timer(_debugDebounce, () {
       if (_activeSpeakerCandidate != null) {
         final sid = _activeSpeakerCandidate!;
@@ -534,9 +571,9 @@ class ZegoCallController extends ChangeNotifier {
     if (newIndex == _activeSpeakerIndex) return;
     _activeSpeakerIndex = newIndex;
     if (streamId == null) {
-      _debugEmit('★ cleared (silence)');
+      _audioDebugEmit('★ cleared (silence)');
     } else {
-      _debugEmit('★ active speaker → idx $newIndex (${streamId.split("-").last})');
+      _audioDebugEmit('★ active speaker → idx $newIndex (${streamId.split("-").last})');
     }
     notifyListeners();
   }
