@@ -12,8 +12,8 @@ const config = {
     v4: true,
   },
 
-  url: 'https://zegoweb.dev',
-  baseUrl: '/',
+  url: 'https://creative-blaq-studios.github.io',
+  baseUrl: '/zegoweb/',
   organizationName: 'Creative-Blaq-Studios',
   projectName: 'zegoweb',
   onBrokenLinks: 'warn',
