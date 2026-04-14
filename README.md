@@ -48,7 +48,7 @@ melos run test
 
 See each package's own README for install and usage.
 
-**[Full documentation](docs-site/)** — architecture guides, API reference, and getting started tutorials.
+**[Full documentation](https://creative-blaq-studios.github.io/zegoweb/)** — architecture guides, API reference, and getting started tutorials.
 
 ## License
 

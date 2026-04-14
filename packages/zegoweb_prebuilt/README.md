@@ -8,7 +8,7 @@ JavaScript UIKit.
 > prebuilt UIKit and exposes an idiomatic Dart API with a single Flutter
 > widget. For a fully Flutter-native call UI, see `zegoweb_ui`.
 
-**[Full documentation](../../docs-site/)**
+**[Full documentation](https://creative-blaq-studios.github.io/zegoweb/)**
 
 ## Status
 

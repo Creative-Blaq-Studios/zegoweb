@@ -8,7 +8,7 @@ JavaScript SDK.
 > `zego-express-engine-webrtc` JavaScript SDK and exposes an idiomatic Dart
 > API. For mobile/desktop, use the official `zego_express_engine` plugin.
 
-**[Full documentation](../../docs-site/)**
+**[Full documentation](https://creative-blaq-studios.github.io/zegoweb/)**
 
 ## Status
 

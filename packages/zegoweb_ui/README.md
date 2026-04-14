@@ -4,7 +4,7 @@ Flutter-native call UI built on [`zegoweb`](../zegoweb) core.
 
 > Not affiliated with or endorsed by ZEGOCLOUD.
 
-**[Full documentation](../../docs-site/)**
+**[Full documentation](https://creative-blaq-studios.github.io/zegoweb/)**
 
 ## Status
 
