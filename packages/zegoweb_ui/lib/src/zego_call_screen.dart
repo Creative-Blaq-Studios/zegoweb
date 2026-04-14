@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:zegoweb/zegoweb.dart';
 
+import 'package:zegoweb_ui/src/layouts/zego_gallery_layout.dart';
 import 'package:zegoweb_ui/src/layouts/zego_grid_layout.dart';
 import 'package:zegoweb_ui/src/layouts/zego_pip_layout.dart';
 import 'package:zegoweb_ui/src/layouts/zego_sidebar_layout.dart';
+import 'package:zegoweb_ui/src/layouts/zego_spotlight_layout.dart';
 import 'package:zegoweb_ui/src/widgets/zego_audio_debug_overlay.dart';
+import 'package:zegoweb_ui/src/widgets/zego_layout_picker_dialog.dart';
 import 'package:zegoweb_ui/src/widgets/zego_controls_bar.dart';
 import 'package:zegoweb_ui/src/widgets/zego_pre_join_view.dart';
 import 'package:zegoweb_ui/src/zego_call_config.dart';
@@ -107,10 +110,37 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
   }
 
   void _handleLayoutSwitch() {
-    final modes = ZegoLayoutMode.values;
-    final nextIndex =
-        (modes.indexOf(_controller.currentLayout) + 1) % modes.length;
-    _controller.switchLayout(modes[nextIndex]);
+    showDialog(
+      context: context,
+      barrierColor: Colors.transparent,
+      builder: (_) => Align(
+        alignment: Alignment.bottomCenter,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 80),
+          child: Material(
+            type: MaterialType.transparency,
+            child: ListenableBuilder(
+              listenable: _controller,
+              builder: (context, _) => ZegoLayoutPickerDialog(
+                currentLayout: _controller.currentLayout,
+                hideNoVideoTiles: _controller.hideNoVideoTiles,
+                gridColumns: _controller.gridColumns,
+                onLayoutSelected: (mode) {
+                  _controller.switchLayout(mode);
+                },
+                onHideNoVideoTilesChanged: (hide) {
+                  _controller.setHideNoVideoTiles(hide);
+                },
+                onGridColumnsChanged: (cols) {
+                  _controller.setGridColumns(cols);
+                },
+                onClose: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -232,20 +262,34 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
   }
 
   Widget _buildLayout() {
-    final participants = _controller.participants;
+    final participants = _controller.filteredParticipants;
+    final layout = _controller.resolvedLayout;
 
-    switch (_controller.currentLayout) {
+    // Determine the effective speaker index, respecting pin.
+    int activeSpeaker = _controller.activeSpeakerIndex;
+    if (_controller.pinnedUserId != null) {
+      final pinIdx = participants.indexWhere(
+        (p) => p.userId == _controller.pinnedUserId,
+      );
+      if (pinIdx >= 0) activeSpeaker = pinIdx;
+    }
+
+    switch (layout) {
       case ZegoLayoutMode.grid:
         return ZegoGridLayout(
           participants: participants,
-          activeSpeakerIndex: _controller.activeSpeakerIndex,
+          activeSpeakerIndex: activeSpeaker,
+          showName: true,
+          showMicIndicator: true,
           videoViewBuilder: _videoViewBuilder,
         );
 
       case ZegoLayoutMode.sidebar:
         return ZegoSidebarLayout(
           participants: participants,
-          activeSpeakerIndex: _controller.activeSpeakerIndex,
+          activeSpeakerIndex: activeSpeaker >= 0 ? activeSpeaker : 0,
+          showName: true,
+          showMicIndicator: true,
           videoViewBuilder: _videoViewBuilder,
         );
 
@@ -253,28 +297,41 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
         if (participants.length < 2) {
           return ZegoGridLayout(
             participants: participants,
-            activeSpeakerIndex: _controller.activeSpeakerIndex,
+            activeSpeakerIndex: activeSpeaker,
             videoViewBuilder: _videoViewBuilder,
           );
         }
-        final local = participants.firstWhere(
-          (p) => p.isLocal,
-          orElse: () => participants.last,
-        );
-        final remote = participants.firstWhere(
-          (p) => !p.isLocal,
-          orElse: () => participants.first,
-        );
-        final activeSpeakerIndex = _controller.activeSpeakerIndex;
+        final localIdx = participants.indexWhere((p) => p.isLocal);
+        final remoteIdx = localIdx == 0 ? 1 : 0;
         return ZegoPipLayout(
-          fullScreenParticipant: remote,
-          floatingParticipant: local,
-          isFullScreenActiveSpeaker:
-              participants.indexOf(remote) == activeSpeakerIndex,
-          isFloatingActiveSpeaker:
-              participants.indexOf(local) == activeSpeakerIndex,
+          fullScreenParticipant: participants[remoteIdx],
+          floatingParticipant: participants[localIdx >= 0 ? localIdx : 0],
+          isFullScreenActiveSpeaker: activeSpeaker == remoteIdx,
+          isFloatingActiveSpeaker: activeSpeaker == localIdx,
           videoViewBuilder: _videoViewBuilder,
         );
+
+      case ZegoLayoutMode.spotlight:
+        return ZegoSpotlightLayout(
+          participants: participants,
+          activeSpeakerIndex: activeSpeaker,
+          showName: true,
+          showMicIndicator: true,
+          videoViewBuilder: _videoViewBuilder,
+        );
+
+      case ZegoLayoutMode.gallery:
+        return ZegoGalleryLayout(
+          participants: participants,
+          activeSpeakerIndex: activeSpeaker >= 0 ? activeSpeaker : 0,
+          showName: true,
+          showMicIndicator: true,
+          videoViewBuilder: _videoViewBuilder,
+        );
+
+      case ZegoLayoutMode.auto:
+        // Should never reach here — resolvedLayout handles auto.
+        return const SizedBox.shrink();
     }
   }
 }
