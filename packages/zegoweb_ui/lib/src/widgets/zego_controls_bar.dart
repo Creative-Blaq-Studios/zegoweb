@@ -198,7 +198,7 @@ class _ZegoControlsBarState extends State<ZegoControlsBar> {
       ));
     }
 
-    if (widget.config.showLayoutSwitcher) {
+    if (widget.config.showLayoutPicker) {
       controls.add(ZegoControlCircle(
         icon: Icons.grid_view,
         color: theme.activeControlColor!,
