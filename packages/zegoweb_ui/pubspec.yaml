@@ -3,7 +3,7 @@ description: >
   Flutter-native call UI built on zegoweb core. Drop-in ZegoCallScreen widget
   with composable layouts, controls, and ThemeExtension theming.
   Not affiliated with or endorsed by ZEGOCLOUD.
-version: 0.0.1
+version: 0.0.2
 license: MIT
 homepage: https://github.com/Creative-Blaq-Studios/zegoweb
 repository: https://github.com/Creative-Blaq-Studios/zegoweb
