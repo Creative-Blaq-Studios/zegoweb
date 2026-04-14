@@ -48,6 +48,8 @@ melos run test
 
 See each package's own README for install and usage.
 
+**[Full documentation](docs-site/)** — architecture guides, API reference, and getting started tutorials.
+
 ## License
 
 See [`LICENSE`](LICENSE). The ZEGO Express Web SDK and the UIKit are
