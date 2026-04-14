@@ -40,6 +40,9 @@ coverage/
 # Superpowers brainstorming sessions
 .superpowers/
 
+# Internal plans, specs & notes
+docs/
+
 # Docs site
 docs-site/node_modules/
 docs-site/build/
