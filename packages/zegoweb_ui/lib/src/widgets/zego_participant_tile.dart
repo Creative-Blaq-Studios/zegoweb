@@ -31,7 +31,7 @@ class ZegoParticipantTile extends StatelessWidget {
   /// Whether to show the name label overlay at the bottom-left.
   final bool showName;
 
-  /// Whether to show the mic status indicator at the top-right.
+  /// Whether to show the mic status indicator inside the name chip.
   final bool showMicIndicator;
 
   /// Whether to mirror the video (typically true for local participants).
@@ -73,7 +73,6 @@ class ZegoParticipantTile extends StatelessWidget {
             children: [
               _buildContent(theme, colorScheme),
               if (showName) _buildNameOverlay(theme),
-              if (showMicIndicator) _buildMicIndicator(theme),
             ],
           ),
         ),
@@ -129,29 +128,25 @@ class ZegoParticipantTile extends StatelessWidget {
           color: const Color(0xCC000000),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: Text(
-          participant.userName ?? participant.userId,
-          style: theme.nameTextStyle ??
-              const TextStyle(color: Colors.white, fontSize: 12),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMicIndicator(ZegoCallTheme theme) {
-    return Positioned(
-      right: 8,
-      top: 8,
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: Colors.black54,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(
-          participant.isMuted ? Icons.mic_off : Icons.mic,
-          size: 16,
-          color: theme.micIndicatorColor ?? Colors.white,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showMicIndicator) ...[
+              Icon(
+                participant.isMuted ? Icons.mic_off : Icons.mic,
+                size: 14,
+                color: participant.isMuted
+                    ? const Color(0xFFEA4335)
+                    : const Color(0xFF4CAF50),
+              ),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              participant.userName ?? participant.userId,
+              style: theme.nameTextStyle ??
+                  const TextStyle(color: Colors.white, fontSize: 12),
+            ),
+          ],
         ),
       ),
     );

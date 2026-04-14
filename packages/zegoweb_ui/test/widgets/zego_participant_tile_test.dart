@@ -49,7 +49,7 @@ void main() {
       expect(find.text('AS'), findsOneWidget);
     });
 
-    testWidgets('shows mic_off icon when muted', (tester) async {
+    testWidgets('shows mic_off icon in name chip when muted', (tester) async {
       const participant = ZegoParticipant(
         userId: 'u1',
         userName: 'Alice',
@@ -66,9 +66,10 @@ void main() {
       ));
 
       expect(find.byIcon(Icons.mic_off), findsOneWidget);
+      expect(find.byIcon(Icons.mic), findsNothing);
     });
 
-    testWidgets('shows mic icon when not muted', (tester) async {
+    testWidgets('shows mic icon in name chip when not muted', (tester) async {
       const participant = ZegoParticipant(
         userId: 'u1',
         userName: 'Alice',
@@ -85,6 +86,7 @@ void main() {
       ));
 
       expect(find.byIcon(Icons.mic), findsOneWidget);
+      expect(find.byIcon(Icons.mic_off), findsNothing);
     });
 
     testWidgets('hides name when showName is false', (tester) async {
