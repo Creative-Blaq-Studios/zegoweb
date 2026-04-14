@@ -17,7 +17,8 @@ class ZegoCallController extends ChangeNotifier {
   ZegoCallController({
     required this.engineConfig,
     required this.callConfig,
-  }) : _currentLayout = callConfig.layout;
+  }) : _currentLayout = callConfig.layout,
+       _hideNoVideoTiles = callConfig.hideNoVideoTiles;
 
   /// Engine configuration used to create the [ZegoEngine] on [join].
   final ZegoEngineConfig engineConfig;
@@ -38,6 +39,17 @@ class ZegoCallController extends ChangeNotifier {
 
   /// Unmodifiable snapshot of the current participant list.
   List<ZegoParticipant> get participants => List.unmodifiable(_participants);
+
+  /// Participants after applying the hide-no-video filter.
+  /// All layout widgets should consume this instead of raw [participants].
+  List<ZegoParticipant> get filteredParticipants {
+    if (!_hideNoVideoTiles) return participants;
+    return List.unmodifiable(
+      _participants.where(
+        (p) => p.isLocal || p.stream != null || !p.isCameraOff,
+      ),
+    );
+  }
 
   ZegoLocalStream? _localStream;
 
@@ -80,6 +92,23 @@ class ZegoCallController extends ChangeNotifier {
   ZegoAudioSettings get audioSettings => _audioSettings;
 
   bool _updatingAudioSettings = false;
+
+  // --- Layout picker state ---
+
+  int? _gridColumns;
+
+  /// Grid column override from the tile size slider. Null = auto-calculated.
+  int? get gridColumns => _gridColumns;
+
+  bool _hideNoVideoTiles = false;
+
+  /// Whether to hide participants with camera off and no stream.
+  bool get hideNoVideoTiles => _hideNoVideoTiles;
+
+  String? _pinnedUserId;
+
+  /// User ID of the pinned participant. Null = no pin.
+  String? get pinnedUserId => _pinnedUserId;
 
   // ---------------------------------------------------------------------------
   // Internal
@@ -315,6 +344,8 @@ class ZegoCallController extends ChangeNotifier {
     _participants.clear();
     _remoteStreams.clear();
     _activeSpeakerIndex = -1;
+    _gridColumns = null;
+    _pinnedUserId = null;
     _setState(ZegoCallState.idle);
   }
 
@@ -340,6 +371,36 @@ class ZegoCallController extends ChangeNotifier {
   void switchLayout(ZegoLayoutMode mode) {
     if (_currentLayout == mode) return;
     _currentLayout = mode;
+    notifyListeners();
+  }
+
+  /// Resolves the effective layout when [currentLayout] is [ZegoLayoutMode.auto].
+  /// Returns the current layout unchanged for non-auto modes.
+  ZegoLayoutMode get resolvedLayout {
+    if (_currentLayout != ZegoLayoutMode.auto) return _currentLayout;
+    final count = filteredParticipants.length;
+    if (_isScreenSharing) return ZegoLayoutMode.sidebar;
+    if (count <= 1) return ZegoLayoutMode.spotlight;
+    if (count == 2) return ZegoLayoutMode.pip;
+    if (count <= 6) return ZegoLayoutMode.grid;
+    return ZegoLayoutMode.sidebar;
+  }
+
+  /// Set grid columns for the tile size slider.
+  void setGridColumns(int? columns) {
+    _gridColumns = columns?.clamp(2, 6);
+    notifyListeners();
+  }
+
+  /// Toggle hiding of tiles without video.
+  void setHideNoVideoTiles(bool hide) {
+    _hideNoVideoTiles = hide;
+    notifyListeners();
+  }
+
+  /// Pin a participant by user ID. Pass null to unpin.
+  void pinParticipant(String? userId) {
+    _pinnedUserId = userId;
     notifyListeners();
   }
 
