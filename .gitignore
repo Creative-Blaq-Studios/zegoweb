@@ -39,3 +39,9 @@ coverage/
 
 # Superpowers brainstorming sessions
 .superpowers/
+
+# Docs site
+docs-site/node_modules/
+docs-site/build/
+docs-site/.docusaurus/
+docs-site/static/api/
