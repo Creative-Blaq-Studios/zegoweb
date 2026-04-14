@@ -245,6 +245,7 @@ class ZegoCallController extends ChangeNotifier {
         ZegoParticipant(
           userId: callConfig.userId,
           userName: callConfig.userName,
+          streamId: streamId,
           stream: _isCameraOn ? _localStream : null,
           isMuted: !_isMicOn,
           isCameraOff: !_isCameraOn,
@@ -406,9 +407,15 @@ class ZegoCallController extends ChangeNotifier {
           _participants.add(ZegoParticipant(
             userId: streamInfo.user.userId,
             userName: streamInfo.user.userName,
+            streamId: streamInfo.streamId,
             stream: remote,
           ));
-        } catch (_) {}
+        } catch (e) {
+          debugPrint(
+            '[ZegoCallController] startPlaying failed for '
+            'stream=${streamInfo.streamId} user=${streamInfo.user.userId}: $e',
+          );
+        }
       }
     } else {
       for (final streamInfo in update.streams) {
@@ -536,8 +543,7 @@ class ZegoCallController extends ChangeNotifier {
 
   int _participantIndexForStream(String streamId) {
     for (var i = 0; i < _participants.length; i++) {
-      final p = _participants[i];
-      if (streamId == 'stream-${p.userId}') return i;
+      if (_participants[i].streamId == streamId) return i;
     }
     return -1;
   }
@@ -558,6 +564,7 @@ class ZegoCallController extends ChangeNotifier {
       _participants[idx] = ZegoParticipant(
         userId: _participants[idx].userId,
         userName: _participants[idx].userName,
+        streamId: _participants[idx].streamId,
         stream: _isCameraOn ? _localStream : null,
         isMuted: !_isMicOn,
         isCameraOff: !_isCameraOn,
