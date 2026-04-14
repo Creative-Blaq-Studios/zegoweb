@@ -1,3 +1,4 @@
+import 'package:flutter/painting.dart';
 import 'package:meta/meta.dart';
 import 'package:zegoweb_ui/src/zego_layout_mode.dart';
 
@@ -8,6 +9,7 @@ class ZegoCallConfig {
     required this.userId,
     this.userName,
     this.layout = ZegoLayoutMode.grid,
+    this.videoFit = BoxFit.contain,
     this.showPreJoinView = true,
     this.showMicrophoneToggle = true,
     this.showCameraToggle = true,
@@ -25,6 +27,10 @@ class ZegoCallConfig {
   final bool showCameraToggle;
   final bool showScreenShareButton;
   final bool showLayoutSwitcher;
+
+  /// How remote and local video streams are fitted within their tile.
+  /// Defaults to [BoxFit.contain] (preserves aspect ratio, letterboxes).
+  final BoxFit videoFit;
 
   /// When true, a floating audio debug overlay is shown in the call screen.
   /// The overlay shows live mic levels, active-speaker state, and controls

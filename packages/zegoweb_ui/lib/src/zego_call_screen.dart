@@ -224,7 +224,11 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
   }
 
   Widget _videoViewBuilder(Object stream, bool mirror) {
-    return ZegoVideoView(stream: stream, mirror: mirror);
+    return ZegoVideoView(
+      stream: stream,
+      mirror: mirror,
+      fit: widget.callConfig.videoFit,
+    );
   }
 
   Widget _buildLayout() {

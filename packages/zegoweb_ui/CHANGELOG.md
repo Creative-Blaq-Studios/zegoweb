@@ -1,3 +1,7 @@
+## 0.0.5
+
+- Add `videoFit` to `ZegoCallConfig` — developers can choose `BoxFit.cover`, `.contain`, `.fill`, etc. Defaults to `BoxFit.contain`.
+
 ## 0.0.4
 
 - **Fix**: Require zegoweb ^0.0.2 (ZegoLog export needed for lifecycle logging).
