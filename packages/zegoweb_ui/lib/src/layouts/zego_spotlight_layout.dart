@@ -14,6 +14,8 @@ class ZegoSpotlightLayout extends StatelessWidget {
     this.showName = true,
     this.showMicIndicator = true,
     this.videoViewBuilder,
+    this.pinnedUserId,
+    this.onPinToggle,
   });
 
   final List<ZegoParticipant> participants;
@@ -21,6 +23,12 @@ class ZegoSpotlightLayout extends StatelessWidget {
   final bool showName;
   final bool showMicIndicator;
   final VideoViewBuilder? videoViewBuilder;
+
+  /// The userId of the currently pinned participant, if any.
+  final String? pinnedUserId;
+
+  /// Called when the tile is long-pressed to toggle pin.
+  final void Function(String userId)? onPinToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +46,10 @@ class ZegoSpotlightLayout extends StatelessWidget {
       mirror: speaker.isLocal,
       isActiveSpeaker: true,
       videoViewBuilder: videoViewBuilder,
+      isPinned: speaker.userId == pinnedUserId,
+      onLongPress: onPinToggle != null
+          ? () => onPinToggle!(speaker.userId)
+          : null,
     );
   }
 }

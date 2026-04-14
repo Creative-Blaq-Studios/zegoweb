@@ -17,6 +17,8 @@ class ZegoGalleryLayout extends StatelessWidget {
     this.showName = true,
     this.showMicIndicator = true,
     this.videoViewBuilder,
+    this.pinnedUserId,
+    this.onPinToggle,
   });
 
   final List<ZegoParticipant> participants;
@@ -26,6 +28,12 @@ class ZegoGalleryLayout extends StatelessWidget {
   final bool showName;
   final bool showMicIndicator;
   final VideoViewBuilder? videoViewBuilder;
+
+  /// The userId of the currently pinned participant, if any.
+  final String? pinnedUserId;
+
+  /// Called when a participant tile is long-pressed to toggle pin.
+  final void Function(String userId)? onPinToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +56,10 @@ class ZegoGalleryLayout extends StatelessWidget {
         mirror: speaker.isLocal,
         isActiveSpeaker: true,
         videoViewBuilder: videoViewBuilder,
+        isPinned: speaker.userId == pinnedUserId,
+        onLongPress: onPinToggle != null
+            ? () => onPinToggle!(speaker.userId)
+            : null,
       );
     }
 
@@ -61,6 +73,10 @@ class ZegoGalleryLayout extends StatelessWidget {
             mirror: speaker.isLocal,
             isActiveSpeaker: true,
             videoViewBuilder: videoViewBuilder,
+            isPinned: speaker.userId == pinnedUserId,
+            onLongPress: onPinToggle != null
+                ? () => onPinToggle!(speaker.userId)
+                : null,
           ),
         ),
         SizedBox(height: spacing),
@@ -80,6 +96,10 @@ class ZegoGalleryLayout extends StatelessWidget {
                   showMicIndicator: showMicIndicator,
                   mirror: p.isLocal,
                   videoViewBuilder: videoViewBuilder,
+                  isPinned: p.userId == pinnedUserId,
+                  onLongPress: onPinToggle != null
+                      ? () => onPinToggle!(p.userId)
+                      : null,
                 ),
               );
             },

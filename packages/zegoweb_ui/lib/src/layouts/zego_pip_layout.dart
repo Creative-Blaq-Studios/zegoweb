@@ -22,6 +22,8 @@ class ZegoPipLayout extends StatefulWidget {
     this.videoViewBuilder,
     this.isFullScreenActiveSpeaker = false,
     this.isFloatingActiveSpeaker = false,
+    this.pinnedUserId,
+    this.onPinToggle,
   });
 
   /// The participant displayed in the full-screen background.
@@ -50,6 +52,12 @@ class ZegoPipLayout extends StatefulWidget {
 
   /// Whether the floating participant is the active speaker.
   final bool isFloatingActiveSpeaker;
+
+  /// The userId of the currently pinned participant, if any.
+  final String? pinnedUserId;
+
+  /// Called when a participant tile is long-pressed to toggle pin.
+  final void Function(String userId)? onPinToggle;
 
   @override
   State<ZegoPipLayout> createState() => _ZegoPipLayoutState();
@@ -145,6 +153,10 @@ class _ZegoPipLayoutState extends State<ZegoPipLayout> {
                 mirror: widget.fullScreenParticipant.isLocal,
                 isActiveSpeaker: widget.isFullScreenActiveSpeaker,
                 videoViewBuilder: widget.videoViewBuilder,
+                isPinned: widget.fullScreenParticipant.userId == widget.pinnedUserId,
+                onLongPress: widget.onPinToggle != null
+                    ? () => widget.onPinToggle!(widget.fullScreenParticipant.userId)
+                    : null,
               ),
             ),
             // Draggable floating overlay — animated when snapping.
@@ -159,13 +171,29 @@ class _ZegoPipLayoutState extends State<ZegoPipLayout> {
                 onPanStart: _onPanStart,
                 onPanUpdate: _onPanUpdate,
                 onPanEnd: _onPanEnd,
-                child: ZegoParticipantTile(
-                  participant: widget.floatingParticipant,
-                  showName: widget.showName,
-                  showMicIndicator: widget.showMicIndicator,
-                  mirror: widget.floatingParticipant.isLocal,
-                  isActiveSpeaker: widget.isFloatingActiveSpeaker,
-                  videoViewBuilder: widget.videoViewBuilder,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x40000000),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ZegoParticipantTile(
+                    participant: widget.floatingParticipant,
+                    showName: widget.showName,
+                    showMicIndicator: widget.showMicIndicator,
+                    mirror: widget.floatingParticipant.isLocal,
+                    isActiveSpeaker: widget.isFloatingActiveSpeaker,
+                    videoViewBuilder: widget.videoViewBuilder,
+                    isPinned: widget.floatingParticipant.userId == widget.pinnedUserId,
+                    onLongPress: widget.onPinToggle != null
+                        ? () => widget.onPinToggle!(widget.floatingParticipant.userId)
+                        : null,
+                  ),
                 ),
               ),
             ),

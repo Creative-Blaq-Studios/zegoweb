@@ -274,6 +274,14 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
       if (pinIdx >= 0) activeSpeaker = pinIdx;
     }
 
+    void onPinToggle(String userId) {
+      if (_controller.pinnedUserId == userId) {
+        _controller.pinParticipant(null);
+      } else {
+        _controller.pinParticipant(userId);
+      }
+    }
+
     switch (layout) {
       case ZegoLayoutMode.grid:
         return ZegoGridLayout(
@@ -282,6 +290,8 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
           showName: true,
           showMicIndicator: true,
           videoViewBuilder: _videoViewBuilder,
+          pinnedUserId: _controller.pinnedUserId,
+          onPinToggle: onPinToggle,
         );
 
       case ZegoLayoutMode.sidebar:
@@ -291,6 +301,8 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
           showName: true,
           showMicIndicator: true,
           videoViewBuilder: _videoViewBuilder,
+          pinnedUserId: _controller.pinnedUserId,
+          onPinToggle: onPinToggle,
         );
 
       case ZegoLayoutMode.pip:
@@ -299,6 +311,8 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
             participants: participants,
             activeSpeakerIndex: activeSpeaker,
             videoViewBuilder: _videoViewBuilder,
+            pinnedUserId: _controller.pinnedUserId,
+            onPinToggle: onPinToggle,
           );
         }
         final localIdx = participants.indexWhere((p) => p.isLocal);
@@ -309,6 +323,8 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
           isFullScreenActiveSpeaker: activeSpeaker == remoteIdx,
           isFloatingActiveSpeaker: activeSpeaker == localIdx,
           videoViewBuilder: _videoViewBuilder,
+          pinnedUserId: _controller.pinnedUserId,
+          onPinToggle: onPinToggle,
         );
 
       case ZegoLayoutMode.spotlight:
@@ -318,6 +334,8 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
           showName: true,
           showMicIndicator: true,
           videoViewBuilder: _videoViewBuilder,
+          pinnedUserId: _controller.pinnedUserId,
+          onPinToggle: onPinToggle,
         );
 
       case ZegoLayoutMode.gallery:
@@ -327,6 +345,8 @@ class _ZegoCallScreenState extends State<ZegoCallScreen> {
           showName: true,
           showMicIndicator: true,
           videoViewBuilder: _videoViewBuilder,
+          pinnedUserId: _controller.pinnedUserId,
+          onPinToggle: onPinToggle,
         );
 
       case ZegoLayoutMode.auto:
