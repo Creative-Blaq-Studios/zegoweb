@@ -35,20 +35,38 @@ ZegoCallScreen(
 |---|---|---|---|
 | `roomId` | `String` | required | Room identifier |
 | `userId` | `String` | required | User identifier |
-| `userName` | `String` | required | Display name |
-| `layoutMode` | `ZegoLayoutMode` | `grid` | Initial layout (grid, sidebar, pip) |
-| `debugMode` | `bool` | `false` | Show audio debug overlay |
+| `userName` | `String?` | `null` | Display name |
+| `layout` | `ZegoLayoutMode` | `auto` | Initial layout (grid, sidebar, pip, spotlight, gallery, auto) |
+| `videoFit` | `BoxFit` | `contain` | How video streams fit within tiles |
+| `showPreJoinView` | `bool` | `true` | Show camera preview before joining |
+| `showMicrophoneToggle` | `bool` | `true` | Show mic button in controls bar |
+| `showCameraToggle` | `bool` | `true` | Show camera button in controls bar |
+| `showScreenShareButton` | `bool` | `false` | Show screen share button |
+| `showLayoutPicker` | `bool` | `true` | Show layout picker button in controls bar |
+| `hideNoVideoTiles` | `bool` | `false` | Initial state for hiding camera-off participants |
+| `showAudioDebugOverlay` | `bool` | `false` | Show floating audio debug panel |
 
 ## Call states
 
 `ZegoCallScreen` transitions through these states:
 
 ```
-idle → preJoin → connecting → connected → leaving → idle
+idle → preJoin → joining → inCall → leaving → idle
 ```
 
 - **idle** — widget mounted, nothing happening yet
 - **preJoin** — showing camera preview and device selection
-- **connecting** — joining the room and publishing local stream
-- **connected** — in the call, showing participants
+- **joining** — joining the room and publishing local stream
+- **inCall** — in the call, showing participants
 - **leaving** — cleaning up streams and engine
+
+## Logging
+
+Enable lifecycle logging to see join/leave, stream add/remove, and error events in the console:
+
+```dart
+import 'package:zegoweb/zegoweb.dart';
+
+ZegoWeb.setLogLevel(ZegoLogLevel.info);    // lifecycle events
+ZegoWeb.setLogLevel(ZegoLogLevel.verbose); // everything
+```
