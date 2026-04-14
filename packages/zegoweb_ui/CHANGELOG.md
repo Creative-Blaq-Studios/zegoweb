@@ -1,3 +1,16 @@
+## 0.0.3
+
+- **Fix**: Show participants who join a room without publishing a stream (camera+mic off).
+- **Fix**: Audio playback for audio-only remote streams — hidden `<video>` element stays mounted when camera is off.
+- **Fix**: Cross-platform stream ID mismatch — participant lookup now uses actual SDK stream IDs instead of assuming `stream-{userId}` format.
+- Add lifecycle logging via `ZegoLog` (pre-join, join, stream add/remove, user join/leave, errors).
+- Rename `debugMode` to `showAudioDebugOverlay` on `ZegoCallConfig`.
+- Add `streamId` field to `ZegoParticipant`.
+
+## 0.0.2
+
+- **Fix**: Cross-platform stream ID mismatch preventing mobile users from appearing.
+
 ## 0.0.1
 
 - Initial release.

@@ -1,3 +1,7 @@
+## 0.0.2
+
+- Export `ZegoLog` from the public barrel for consumer-level logging control.
+
 ## 0.0.1
 
 - Initial release.
