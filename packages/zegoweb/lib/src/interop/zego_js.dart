@@ -212,4 +212,6 @@ abstract final class ZegoJsEvents {
   static const publishQualityUpdate = 'publishQualityUpdate';
   static const playQualityUpdate = 'playQualityUpdate';
   static const soundLevelUpdate = 'soundLevelUpdate';
+  static const remoteCameraStatusUpdate = 'remoteCameraStatusUpdate';
+  static const remoteMicStatusUpdate = 'remoteMicStatusUpdate';
 }

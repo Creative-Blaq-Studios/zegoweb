@@ -162,3 +162,29 @@ class ZegoTokenWillExpire {
   String toString() =>
       'ZegoTokenWillExpire(roomId: $roomId, remainingSeconds: $remainingSeconds)';
 }
+
+/// Payload for the JS SDK's `remoteCameraStatusUpdate` and
+/// `remoteMicStatusUpdate` events.
+///
+/// [status] mirrors the JS `ZegoRemoteDeviceStatus` enum: `"OPEN"` means the
+/// device is active; any other value (`"MUTE"`, `"DISABLE"`, `"INTERRUPT"`,
+/// etc.) means the device is unavailable.
+@immutable
+class ZegoRemoteDeviceUpdate {
+  const ZegoRemoteDeviceUpdate({
+    required this.streamId,
+    required this.status,
+  });
+
+  final String streamId;
+
+  /// Raw JS status string. Use [isActive] for a boolean interpretation.
+  final String status;
+
+  /// `true` when the device is open (status == `"OPEN"`).
+  bool get isActive => status == 'OPEN';
+
+  @override
+  String toString() =>
+      'ZegoRemoteDeviceUpdate(streamId: $streamId, status: $status)';
+}

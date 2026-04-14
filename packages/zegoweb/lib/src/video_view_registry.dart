@@ -34,12 +34,15 @@ class VideoViewRegistry {
   String registerStream(Object zegoStream) {
     final JSObject jsStream;
     final String id;
+    final bool muteAudio;
     if (zegoStream is ZegoLocalStream) {
       jsStream = zegoStream.jsStream;
       id = zegoStream.id;
+      muteAudio = true; // prevent hearing your own microphone back
     } else if (zegoStream is ZegoRemoteStream) {
       jsStream = zegoStream.jsStream;
       id = zegoStream.id;
+      muteAudio = false; // remote audio must be audible
     } else {
       throw ArgumentError.value(
         zegoStream,
@@ -51,7 +54,7 @@ class VideoViewRegistry {
     final viewType =
         'zegoweb-video-$id-${_counter++}-${DateTime.now().microsecondsSinceEpoch}';
 
-    final element = _createVideoElement(jsStream);
+    final element = _createVideoElement(jsStream, muteAudio: muteAudio);
     _elements[viewType] = element;
     _registered.add(viewType);
 
@@ -72,6 +75,9 @@ class VideoViewRegistry {
     final element = _elements.remove(viewType);
     if (element != null) {
       try {
+        // Hide immediately so the element doesn't show as a black overlay
+        // on the Flutter canvas while the platform view is being torn down.
+        element.style.display = 'none';
         element.srcObject = null;
       } catch (_) {
         // best-effort cleanup
@@ -87,11 +93,14 @@ class VideoViewRegistry {
   /// viewType is unknown / has been unregistered.
   web.HTMLVideoElement? elementFor(String viewType) => _elements[viewType];
 
-  web.HTMLVideoElement _createVideoElement(JSObject jsStream) {
+  web.HTMLVideoElement _createVideoElement(
+    JSObject jsStream, {
+    bool muteAudio = false,
+  }) {
     final element =
         (web.document.createElement('video') as web.HTMLVideoElement)
           ..autoplay = true
-          ..muted = true
+          ..muted = muteAudio
           ..playsInline = true
           ..style.width = '100%'
           ..style.height = '100%'

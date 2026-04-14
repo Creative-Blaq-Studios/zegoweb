@@ -185,6 +185,18 @@ class EventBridge implements TokenBridge {
         ZegoJsEvents.soundLevelUpdate,
         _parseSoundLevelUpdate,
       );
+
+  Stream<ZegoRemoteDeviceUpdate> get onRemoteCameraStatusUpdate =>
+      registerEvent<ZegoRemoteDeviceUpdate>(
+        ZegoJsEvents.remoteCameraStatusUpdate,
+        _parseRemoteDeviceUpdate,
+      );
+
+  Stream<ZegoRemoteDeviceUpdate> get onRemoteMicStatusUpdate =>
+      registerEvent<ZegoRemoteDeviceUpdate>(
+        ZegoJsEvents.remoteMicStatusUpdate,
+        _parseRemoteDeviceUpdate,
+      );
 }
 
 // ---------------------------------------------------------------------------
@@ -397,6 +409,15 @@ ZegoSoundLevelUpdate _parseSoundLevelUpdate(List<JSAny?> args) {
     }
   }
   return ZegoSoundLevelUpdate(levels: levels);
+}
+
+/// Parses `remoteCameraStatusUpdate(streamID, deviceStatus)` and
+/// `remoteMicStatusUpdate(streamID, deviceStatus)` — two positional string args.
+ZegoRemoteDeviceUpdate _parseRemoteDeviceUpdate(List<JSAny?> args) {
+  return ZegoRemoteDeviceUpdate(
+    streamId: _argString(args, 0) ?? '',
+    status: _argString(args, 1) ?? '',
+  );
 }
 
 class _EventEntry<T> {

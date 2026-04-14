@@ -63,6 +63,10 @@ class ZegoStreamConfig {
     this.videoHeight,
     this.videoFps,
     this.videoBitrate,
+    this.audioBitrate,
+    this.noiseSuppression,
+    this.autoGainControl,
+    this.echoCancellation,
   });
 
   final bool camera;
@@ -71,6 +75,20 @@ class ZegoStreamConfig {
   final int? videoHeight;
   final int? videoFps;
   final int? videoBitrate;
+
+  /// Audio bitrate in kbps. ZEGO default is 48; use 64–128 for better quality.
+  final int? audioBitrate;
+
+  /// Acoustic Noise Suppression (SDK key: `ANS`). Defaults to true in the SDK.
+  /// Set to false if voices sound distant or over-processed.
+  final bool? noiseSuppression;
+
+  /// Auto Gain Control (SDK key: `AGC`). Defaults to true in the SDK.
+  final bool? autoGainControl;
+
+  /// Acoustic Echo Cancellation (SDK key: `AEC`). Defaults to true in the SDK.
+  /// Only disable if all participants use headphones.
+  final bool? echoCancellation;
 
   /// Convert to the JS config object expected by
   /// `ZegoExpressEngineJs.createStream`. Null fields are omitted so the JS
@@ -83,6 +101,10 @@ class ZegoStreamConfig {
     if (videoHeight != null) cfg['videoHeight'] = videoHeight!.toJS;
     if (videoFps != null) cfg['videoFps'] = videoFps!.toJS;
     if (videoBitrate != null) cfg['videoBitrate'] = videoBitrate!.toJS;
+    if (audioBitrate != null) cfg['audioBitrate'] = audioBitrate!.toJS;
+    if (noiseSuppression != null) cfg['ANS'] = noiseSuppression!.toJS;
+    if (autoGainControl != null) cfg['AGC'] = autoGainControl!.toJS;
+    if (echoCancellation != null) cfg['AEC'] = echoCancellation!.toJS;
     return cfg;
   }
 }

@@ -25,7 +25,7 @@ export 'src/models/zego_user.dart' show ZegoUser;
 export 'src/models/zego_device_info.dart' show ZegoDeviceInfo;
 export 'src/models/zego_stream_info.dart' show ZegoStreamInfo;
 export 'src/models/zego_events.dart'
-    show ZegoRoomUserUpdate, ZegoRoomStreamUpdate;
+    show ZegoRoomUserUpdate, ZegoRoomStreamUpdate, ZegoRemoteDeviceUpdate;
 export 'src/models/zego_sound_level.dart'
     show ZegoSoundLevelInfo, ZegoSoundLevelUpdate;
 
