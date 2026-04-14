@@ -36,3 +36,5 @@ export 'src/widgets/zego_control_circle.dart' show ZegoControlCircle;
 export 'src/widgets/zego_hang_up_button.dart' show ZegoHangUpButton;
 export 'src/widgets/zego_device_popover.dart' show ZegoDevicePopover;
 export 'src/widgets/zego_pre_join_view.dart' show ZegoPreJoinView;
+export 'src/widgets/zego_layout_picker_dialog.dart'
+    show ZegoLayoutPickerDialog;
