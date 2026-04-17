@@ -1,3 +1,12 @@
+## 0.1.1
+
+### Breaking Changes
+- Default publish stream ID format changed from `stream-{userId}` to `{roomId}_{userId}_main` to match the ZEGO mobile prebuilt UI kit. Web and mobile peers in the same room can now discover each other's streams.
+
+### New Features
+- `ZegoCallConfig.streamIdBuilder` — optional `(roomId, userId) -> String` builder to override the publish stream ID format.
+- `ZegoCallConfig.defaultStreamIdBuilder` — static helper exposing the default `{roomId}_{userId}_main` format for composition.
+
 ## 0.1.0
 
 ### Breaking Changes
