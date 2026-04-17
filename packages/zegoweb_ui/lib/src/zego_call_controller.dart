@@ -274,7 +274,11 @@ class ZegoCallController extends ChangeNotifier {
           autoGainControl: _audioSettings.autoGainControl,
         ),
       );
-      final streamId = 'stream-${callConfig.userId}';
+      final streamId = (callConfig.streamIdBuilder ??
+          ZegoCallConfig.defaultStreamIdBuilder)(
+        callConfig.roomId,
+        callConfig.userId,
+      );
       await _engine!.startPublishing(streamId, _localStream!);
       ZegoLog.info('CallController.join published streamId=$streamId');
 
