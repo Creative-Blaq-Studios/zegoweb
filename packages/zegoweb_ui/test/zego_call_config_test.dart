@@ -8,14 +8,13 @@ void main() {
       expect(cfg.streamIdBuilder, isNull);
     });
 
-    test('streamIdBuilder can be provided via constructor', () {
-      String builder(String r, String u) => 'custom-$r-$u';
+    test('streamIdBuilder is invoked with the passed arguments', () {
       final cfg = ZegoCallConfig(
         roomId: 'r1',
         userId: 'u1',
-        streamIdBuilder: builder,
+        streamIdBuilder: (r, u) => 'custom-$r-$u',
       );
-      expect(cfg.streamIdBuilder, same(builder));
+      expect(cfg.streamIdBuilder!('room42', 'bob'), 'custom-room42-bob');
     });
 
     test('defaultStreamIdBuilder returns {roomId}_{userId}_main', () {
