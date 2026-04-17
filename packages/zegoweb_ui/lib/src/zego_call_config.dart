@@ -17,6 +17,7 @@ class ZegoCallConfig {
     this.showLayoutPicker = true,
     this.hideNoVideoTiles = false,
     this.showAudioDebugOverlay = false,
+    this.streamIdBuilder,
   });
 
   final String roomId;
@@ -35,4 +36,17 @@ class ZegoCallConfig {
   /// The overlay shows live mic levels, active-speaker state, and controls
   /// for adjusting the detection threshold and debounce at runtime.
   final bool showAudioDebugOverlay;
+
+  /// Builds the stream ID the local user publishes under. When `null`, the
+  /// controller uses [defaultStreamIdBuilder], which matches the format the
+  /// ZEGO mobile prebuilt UI kit uses (`{roomId}_{userId}_main`). Override
+  /// this only if you need to interoperate with a kit that uses a different
+  /// format.
+  final String Function(String roomId, String userId)? streamIdBuilder;
+
+  /// Default publish stream ID format: `{roomId}_{userId}_main`. Matches the
+  /// ZEGO mobile prebuilt UI kit, so web and mobile peers can discover each
+  /// other's streams when joining the same room.
+  static String defaultStreamIdBuilder(String roomId, String userId) =>
+      '${roomId}_${userId}_main';
 }
